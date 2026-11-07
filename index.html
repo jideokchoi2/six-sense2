@@ -1,0 +1,1124 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>북빌리지 스쿨</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#3b3226;--paper:#fffaf0;--leaf:#6cc17a;--leaf-d:#3f9a5a;--sun:#ffd166;--pink:#ff8fab;--sky:#8fd3ff;--line:#e8dcc2}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#bfe8ff;font-family:'Gowun Dodum','Jua',system-ui,sans-serif;color:var(--ink)}
+canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#ui{position:fixed;inset:0;pointer-events:none}
+#ui>*{pointer-events:auto}
+h1,h2,h3,.jua{font-family:'Jua','Gowun Dodum',sans-serif;font-weight:400}
+.btn{font:inherit;font-family:'Jua',sans-serif;background:var(--leaf);color:#fff;border:0;border-radius:999px;padding:.55em 1.2em;font-size:1rem;cursor:pointer;box-shadow:0 3px 0 var(--leaf-d);transition:transform .08s}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--leaf-d)}
+.btn.alt{background:#fff;color:var(--ink);box-shadow:0 3px 0 var(--line);border:2px solid var(--line)}
+.btn.pink{background:var(--pink);box-shadow:0 3px 0 #e0658a}
+.btn.sun{background:var(--sun);color:var(--ink);box-shadow:0 3px 0 #d9a82e}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.hud{position:fixed;left:12px;top:12px;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.hud>*{pointer-events:auto}
+.pill{background:rgba(255,250,240,.93);border:2px solid var(--line);border-radius:18px;padding:8px 14px;box-shadow:0 3px 8px rgba(0,0,0,.12);font-size:.95rem}
+.pill b{font-family:'Jua';font-weight:400}
+#quest{max-width:290px;line-height:1.35}
+#quest .t{color:var(--leaf-d);font-family:'Jua'}
+.topbtns{position:fixed;right:12px;top:12px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.help{position:fixed;left:12px;bottom:12px;font-size:.8rem;background:rgba(255,250,240,.8);padding:6px 10px;border-radius:12px;pointer-events:none}
+#prompt{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);display:none;font-size:1.1rem;padding:.6em 1.4em;white-space:nowrap}
+#prompt kbd{background:#fff;color:var(--ink);border-radius:6px;padding:1px 7px;margin-right:6px;font-family:inherit}
+#toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none}
+.toast{background:#3b3226;color:#fff;border-radius:999px;padding:8px 18px;animation:tin .25s,tout .4s 2.6s forwards;font-size:.95rem}
+@keyframes tin{from{opacity:0;transform:translateY(-10px)}}
+@keyframes tout{to{opacity:0;transform:translateY(-10px)}}
+#fade{position:fixed;inset:0;background:#fffaf0;opacity:0;pointer-events:none;transition:opacity .35s}
+#fade.on{opacity:1;pointer-events:auto}
+#dialog{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);width:min(720px,94vw);background:var(--paper);border:3px solid var(--ink);border-radius:22px;padding:16px 20px 14px;display:none;box-shadow:0 6px 0 rgba(0,0,0,.18)}
+#dialog .nm{position:absolute;top:-18px;left:18px;background:var(--sun);border:3px solid var(--ink);border-radius:999px;padding:2px 16px;font-family:'Jua';font-size:1.05rem}
+#dialog .tx{font-size:1.1rem;line-height:1.55;min-height:3.1em;white-space:pre-wrap}
+#dialog .ch{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+#dialog .nx{text-align:right;font-size:.8rem;opacity:.6}
+.modal-back{position:fixed;inset:0;background:rgba(40,30,20,.45);display:flex;align-items:center;justify-content:center;padding:14px}
+.modal{position:relative;background:var(--paper);border:3px solid var(--ink);border-radius:26px;padding:22px 24px;width:min(640px,100%);max-height:92vh;overflow:auto;box-shadow:0 8px 0 rgba(0,0,0,.2)}
+.modal.wide{width:min(900px,100%)}
+.modal h2{margin:0 0 10px;font-size:1.5rem}
+.modal .x{position:absolute;right:12px;top:10px;border:0;background:transparent;font-size:1.3rem;cursor:pointer}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.card{background:#fff;border:2px solid var(--line);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.card h3{margin:0;font-size:1.1rem}
+.card p{margin:0;font-size:.88rem;line-height:1.4}
+.spine{height:10px;border-radius:5px}
+.tag{display:inline-block;background:#e9f6e5;color:var(--leaf-d);border-radius:999px;padding:1px 9px;font-size:.82rem;margin:2px 3px 2px 0}
+.tag.btnlike{cursor:pointer;border:0;font-family:inherit}
+.tag.on{background:var(--leaf);color:#fff}
+.swatch{width:26px;height:26px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 2px var(--line);cursor:pointer;padding:0}
+.swatch.on{box-shadow:0 0 0 3px var(--ink)}
+.opt{border:2px solid var(--line);background:#fff;border-radius:999px;padding:3px 11px;cursor:pointer;font:inherit;font-size:.88rem}
+.opt.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+textarea,input[type=text]{font:inherit;width:100%;border:2px solid var(--line);border-radius:14px;padding:10px;background:#fff;color:var(--ink)}
+textarea{min-height:110px;resize:vertical}
+.bar{height:16px;border-radius:99px;background:#eadfc6;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--leaf);transition:width .2s}
+.bar.low>i{background:#ee6c4d}
+.center{text-align:center}
+.mut{opacity:.65;font-size:.88rem}
+table{width:100%;border-collapse:collapse}
+td,th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;font-size:.95rem}
+tr.me{background:#fff3c4;font-weight:bold}
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.key{display:inline-block;width:46px;height:150px;background:#fff;border:2px solid var(--ink);border-radius:0 0 10px 10px;margin:0 2px;cursor:pointer;vertical-align:top;position:relative;font-size:.8rem}
+.key span{position:absolute;bottom:6px;left:0;right:0;text-align:center}
+.key.down{background:var(--sun)}
+.bookpage{background:#fff;border:2px solid var(--line);border-radius:14px;padding:14px;margin-top:8px}
+.creator{position:fixed;left:12px;top:12px;bottom:12px;width:min(380px,92vw);overflow:auto;background:rgba(255,250,240,.96);border:3px solid var(--ink);border-radius:24px;padding:18px}
+.creator h3{margin:14px 0 6px;font-size:1rem}
+.title-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;background:linear-gradient(#bfe8ff 0%,#e9f9d8 100%);text-align:center}
+.title-screen h1{font-size:clamp(2.4rem,8vw,4.6rem);margin:0;color:#2f7d4a;text-shadow:0 4px 0 #fff}
+.title-screen p{max-width:520px;margin:0;line-height:1.6}
+@media(max-width:640px){.help{display:none}#quest{max-width:200px;font-size:.85rem}}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="ui">
+  <div class="hud" id="hud" style="display:none">
+    <div class="pill" id="me"></div>
+    <div class="pill" id="quest"></div>
+  </div>
+  <div class="topbtns" id="topbtns" style="display:none">
+    <button class="btn alt" id="b-books">📘 내 책</button>
+    <button class="btn alt" id="b-league">🏆 리그</button>
+    <button class="btn alt" id="b-avatar">👕 꾸미기</button>
+  </div>
+  <div class="help" id="helpbar" style="display:none">WASD·방향키 이동 / 바닥 클릭 이동 / E·스페이스 상호작용 / 휠 확대·축소</div>
+  <button class="btn sun" id="prompt"></button>
+  <div id="toast"></div>
+  <div id="dialog"><div class="nm"></div><div class="tx"></div><div class="ch"></div><div class="nx">▶ 클릭 또는 E</div></div>
+  <div id="screen"></div>
+  <div id="fade"></div>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+/* ============================================================
+   데이터 (아바타 옵션은 six-sense 저장소의 src/lib/avatar.ts 를 그대로 가져왔어요)
+   ============================================================ */
+const SKINS=["#fbe0cc","#f7d7bd","#efc39a","#d9a172","#b98255","#a9703f","#7a4a24"];
+const HAIRS=["#23180f","#4a2a16","#6b3f1d","#9b5b25","#c9852b","#e8c76a","#4d6fd4","#d15a9a","#2a9d8f"];
+const CLOTHES=["#e2574c","#f2a33c","#7ac17a","#4aa3d8","#8a6fd1","#d15a9a","#f2d85c","#f0f0f0","#3a4a5a"];
+const HAIR_STYLES=["short","long","curly","cap","wave","bob","ponytail","bun","spiky"];
+const TOP_STYLES=["tee","hoodie","uniform","stripe","overall"];
+const BOTTOM_STYLES=["pants","shorts","skirt"];
+const FACES=["smile","wow","calm","wink","cheerful"];
+const EYES=["round","happy","sparkle"];
+const ACCS=["none","glasses","sunglasses","headband","bow","beanie"];
+const L={short:"짧은 머리",long:"긴 머리",curly:"곱슬 머리",cap:"챙 모자",wave:"웨이브",bob:"단발머리",ponytail:"묶은 머리",bun:"똥머리",spiky:"삐죽 머리",
+ tee:"티셔츠",hoodie:"후드티",uniform:"교복",stripe:"줄무늬",overall:"멜빵옷",pants:"긴바지",shorts:"반바지",skirt:"치마",
+ smile:"웃는 얼굴",wow:"놀란 얼굴",calm:"차분한 얼굴",wink:"윙크",cheerful:"활짝 웃음",round:"동그란 눈",happy:"웃는 눈",sparkle:"반짝 눈",
+ none:"없음",glasses:"안경",sunglasses:"선글라스",headband:"머리띠",bow:"리본",beanie:"비니"};
+const DEFAULT_AVATAR={displayName:"",skin:SKINS[1],hair:HAIRS[0],hairStyle:"short",top:CLOTHES[3],topStyle:"tee",bottom:"#3a4a5a",bottomStyle:"pants",face:"smile",eyes:"round",accessory:"none"};
+
+const BOOKS={
+ boys15:{id:'boys15',title:'15소년 표류기',author:'쥘 베른',color:'#4aa3d8',badge:'🏝️',level:'★★☆',
+  blurb:'폭풍에 휩쓸려 무인도에 닿은 열다섯 소년들. 어른 없이 서로 힘을 모아 살아남는 모험 이야기.',
+  why:'친구들과 함께 협동 게임을 하고, 내가 주인공이 되어 선택하는 이야기를 만들 수 있어요.',
+  motif:'폭풍이 지나간 무인도, 모닥불과 푸른 바다',
+  scenes:[
+   {t:'거센 폭풍이 지나가고, 배는 낯선 섬에 닿았어요. 어른은 아무도 없어요. 모두가 겁에 질려 있어요. {name}(은)는 가장 먼저 무엇을 할까요?',c:[['모두를 모아 인원부터 확인한다','b'],['높은 곳에 올라 섬을 살핀다','w'],['먼저 먹을 것을 구하러 나선다','c']]},
+   {t:'며칠이 지나자 소년들이 리더를 두고 다투기 시작했어요. 분위기가 험악해요.',c:[['투표로 정하자고 규칙을 제안한다','w'],['싸우는 두 친구 사이에서 이야기를 들어 준다','b'],['내가 나서서 책임지겠다고 말한다','c']]},
+   {t:'깜깜한 밤, 숲속에서 정체 모를 소리가 들려와요. 아이들이 웅성거려요.',c:[['횃불을 들고 직접 확인하러 간다','c'],['친구들과 조를 짜서 함께 간다','b'],['소리의 방향과 크기를 기록하며 관찰한다','w']]},
+   {t:'수평선 너머로 배 한 척이 지나가요! 구조 신호를 보낼 마지막 기회예요.',c:[['장작을 모아 커다란 봉화를 피운다','c'],['거울과 깃발로 빛 신호를 계산해 보낸다','w'],['어린 친구들부터 안전한 곳으로 모은다','b']]}],
+  end:{c:'{name}(은)는 두려움 앞에서도 앞장서는 용기로 친구들의 등불이 되었어요.',b:'{name}(은)는 모두를 살피는 따뜻한 마음으로 소년들을 하나로 묶었어요.',w:'{name}(은)는 차분한 지혜로 위기마다 길을 찾아냈어요.'}},
+ lime:{id:'lime',title:'나의 라임오렌지나무',author:'J.M. 바스콘셀로스',color:'#f2a33c',badge:'🍊',level:'★★☆',
+  blurb:'장난꾸러기 다섯 살 제제가 라임오렌지나무 밍기뉴와 나누는 우정, 그리고 아픈 성장 이야기.',
+  why:'제제의 마음을 따라가며 나의 감정을 돌아보고, 마음을 표현하는 선택을 해 볼 수 있어요.',
+  motif:'작은 라임오렌지나무와 따뜻한 오후 햇살',
+  scenes:[
+   {t:'장난을 치다가 혼이 난 {name}-제제. 가슴이 콕콕 아파요. 뒷마당 오렌지나무 밍기뉴가 가만히 지켜봐요.',c:[['밍기뉴에게 속마음을 털어놓는다','b'],['더 멋진 장난을 상상하며 기분을 푼다','c'],['왜 혼났는지 곰곰이 생각해 본다','w']]},
+   {t:'새 친구가 된 뽀르뚜가 아저씨가 제제에게 말을 걸어요. 하지만 제제는 아직 마음을 열기 어려워요.',c:[['먼저 인사를 건네 본다','c'],['아저씨가 왜 다정한지 천천히 살펴본다','w'],['고마운 마음을 작은 그림에 담아 건넨다','b']]},
+   {t:'크리스마스 날, 집에는 선물이 없어요. 아빠의 얼굴이 어두워 보여요.',c:[['아빠를 꼭 안아 드린다','b'],['괜찮다고 씩씩하게 말한다','c'],['모두가 웃을 방법을 생각해 본다','w']]},
+   {t:'소중한 친구가 멀리 떠나게 되었어요. 마음이 무겁지만, 나무 밍기뉴가 속삭이는 것 같아요.',c:[['눈물이 나도 끝까지 인사를 한다','c'],['함께한 시간을 편지로 정리한다','w'],['오래오래 기억하겠다고 약속한다','b']]}],
+  end:{c:'{name}(은)는 슬픔 속에서도 한 걸음 내딛는 용기를 배웠어요.',b:'{name}(은)는 마음을 나누는 일이 얼마나 큰 힘인지 알게 되었어요.',w:'{name}(은)는 아픔을 이해하며 한 뼘 더 자랐어요.'}},
+ prince:{id:'prince',title:'어린 왕자',author:'생텍쥐페리',color:'#8a6fd1',badge:'🌹',level:'★☆☆',
+  blurb:'작은 별에서 온 어린 왕자가 여러 행성을 여행하며 만나는 어른들과 소중한 관계의 비밀.',
+  why:'짧고 상징이 풍부해서 처음 고전을 읽는 친구에게 좋아요. 질문을 따라가며 읽어요.',
+  motif:'작은 별과 장미, 별이 쏟아지는 밤하늘',
+  scenes:[
+   {t:'사막 한가운데서 {name}(은)는 금빛 머리의 아이를 만났어요. "양 한 마리만 그려 줘!"',c:[['상자를 그려 주며 안에 양이 있다고 한다','c'],['아이가 왜 양을 원하는지 먼저 묻는다','b'],['양에 대해 아는 것을 차분히 설명한다','w']]},
+   {t:'어린 왕자의 장미는 까다로워요. 하지만 왕자는 장미가 너무 소중해요.',c:[['"소중한 건 시간을 쏟은 만큼이야"라고 말해 준다','b'],['장미에게 사과하라고 용기를 준다','c'],['왜 소중한지 함께 생각해 본다','w']]},
+   {t:'여우가 말해요. "나를 길들여 줘." 길들인다는 건 무슨 뜻일까요?',c:[['매일 같은 시간에 찾아가겠다고 약속한다','b'],['낯설어도 먼저 다가가 본다','c'],['"관계를 맺는 일"이라 정리해 본다','w']]}],
+  end:{c:'{name}(은)는 먼저 다가가는 용기로 소중한 관계를 시작했어요.',b:'{name}(은)는 눈에 보이지 않는 마음을 가장 소중히 여겼어요.',w:'{name}(은)는 본질을 바라보는 맑은 눈을 얻었어요.'}},
+ demian:{id:'demian',title:'데미안',author:'헤르만 헤세',color:'#3a4a5a',badge:'🥚',level:'★★★',
+  blurb:'"새는 알에서 나오려고 투쟁한다." 나를 찾아가는 소년 싱클레어의 성장 이야기.',
+  why:'헤세 사서가 직접 쓴 책이에요. 나는 어떤 사람이 되고 싶은지 스스로 물어보게 돼요.',
+  motif:'알을 깨고 날아오르는 새, 새벽의 푸른 빛',
+  scenes:[
+   {t:'학교에서 힘센 아이가 {name}(을)를 협박해요. 그때 전학생 데미안이 말을 걸어요.',c:[['도움을 받아들이고 용기를 내 맞선다','c'],['혼자 해결할 방법을 곰곰이 생각한다','w'],['괴롭힘 당한 친구들과 함께 이야기한다','b']]},
+   {t:'나의 안에는 "밝은 세계"와 "어두운 세계"가 있어요. 무엇이 진짜 나일까요?',c:[['둘 다 나라는 것을 인정한다','w'],['어두운 마음도 솔직히 말해 본다','c'],['그런 마음의 친구에게 손을 내민다','b']]},
+   {t:'새벽, 알을 깨고 나온 새가 하늘로 날아올라요. 나는 어떤 세계로 날아갈까요?',c:[['두렵지만 날개를 펼친다','c'],['스스로의 길을 글로 적어 본다','w'],['함께 날아갈 친구를 찾는다','b']]}],
+  end:{c:'{name}(은)는 알을 깨는 용기로 자신의 길을 선택했어요.',b:'{name}(은)는 다른 사람과 이어지며 나를 찾아갔어요.',w:'{name}(은)는 마음속 질문을 놓지 않는 사람이 되었어요.'}}
+};
+const TRAIT={c:'용기',b:'배려',w:'지혜'};
+const HASHTAGS=['#용기','#우정','#성장','#모험','#가족','#슬픔','#희망','#상상력','#배려','#질문이남는책','#또읽고싶어','#눈물주의'];
+
+const SHOP=[
+ {id:'st_star',kind:'sticker',emoji:'⭐',name:'반짝 별 스티커',price:20},
+ {id:'st_rain',kind:'sticker',emoji:'🌈',name:'무지개 스티커',price:30},
+ {id:'st_clover',kind:'sticker',emoji:'🍀',name:'네잎클로버',price:30},
+ {id:'st_books',kind:'sticker',emoji:'📚',name:'책탑 스티커',price:25},
+ {id:'fg_bear',kind:'figure',emoji:'🧸',name:'곰돌이 피규어',price:60,color:'#c68b59'},
+ {id:'fg_rocket',kind:'figure',emoji:'🚀',name:'로켓 피규어',price:80,color:'#e2574c'},
+ {id:'fg_plant',kind:'figure',emoji:'🪴',name:'작은 화분',price:40,color:'#6cc17a'},
+ {id:'th_pink',kind:'theme',emoji:'🎀',name:'분홍 사물함',price:50,color:'#ff9fb8'},
+ {id:'th_sky',kind:'theme',emoji:'☁️',name:'하늘 사물함',price:50,color:'#8fd3ff'},
+ {id:'th_mint',kind:'theme',emoji:'🌿',name:'민트 사물함',price:50,color:'#8fe3c0'},
+ {id:'th_purple',kind:'theme',emoji:'🔮',name:'보라 사물함',price:70,color:'#b79bf0'}
+];
+const TIERS=[{n:'브론즈',e:'🥉',min:0},{n:'실버',e:'🥈',min:120},{n:'골드',e:'🥇',min:300},{n:'다이아',e:'💎',min:600}];
+const tierOf=s=>[...TIERS].reverse().find(t=>s>=t.min);
+const NAMES=['하늘','지우','서연','민준','도윤','하윤','예준','서준','수아','지안','이안','채원','유나','시우','은우','다은','로운','나온','태오','소율','다온','이서','가온','주원'];
+const FAKE_REVIEWS=[
+ {name:'서연',book:'lime',stars:5,text:'제제가 밍기뉴에게 말하는 장면에서 울컥했다. 나도 속마음을 털어놓을 나무가 있었으면 좋겠다.',tags:['#슬픔','#우정']},
+ {name:'민준',book:'boys15',stars:5,text:'협동 게임에서 불이 꺼질 뻔했는데 친구들이 도와줘서 살았다! 무인도에서도 함께하면 이겨낼 수 있다.',tags:['#모험','#용기']},
+ {name:'지우',book:'prince',stars:4,text:'길들인다는 건 시간을 쓰는 거라는 말이 오래 기억에 남는다.',tags:['#질문이남는책']},
+ {name:'도윤',book:'demian',stars:4,text:'어렵지만 알을 깨고 나온다는 말이 멋졌다. 다음에 한 번 더 읽고 싶다.',tags:['#성장','#또읽고싶어']}
+];
+
+/* ============================================================
+   저장
+   ============================================================ */
+const SAVE_KEY='bookvillage-save-v1';
+let S=null;
+const loadSave=()=>{try{return JSON.parse(localStorage.getItem(SAVE_KEY))}catch(e){return null}};
+const save=()=>{try{localStorage.setItem(SAVE_KEY,JSON.stringify(S))}catch(e){}refreshHud()};
+const newSave=()=>({avatar:{...DEFAULT_AVATAR},points:30,books:{},owned:[],equipped:[],likes:{}});
+const completedCount=()=>Object.values(S.books).filter(b=>b.status==='reviewed').length;
+const coverCount=()=>Object.values(S.books).filter(b=>b.cover).length;
+const myScore=()=>completedCount()*60+coverCount()*10;
+
+/* ============================================================
+   Three.js 기본 설정
+   ============================================================ */
+const canvas=document.getElementById('gl');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(42,1,0.1,400);
+scene.add(new THREE.HemisphereLight(0xffffff,0xb7d9a0,1.05));
+const sun=new THREE.DirectionalLight(0xfff1d6,1.9);
+sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+Object.assign(sun.shadow.camera,{left:-26,right:26,top:26,bottom:-26,near:1,far:90});
+sun.shadow.bias=-0.0006;
+scene.add(sun,sun.target);
+function resize(){renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}
+addEventListener('resize',resize);resize();
+
+const M={};
+const mat=(c)=>{const k=c;return M[k]||(M[k]=new THREE.MeshLambertMaterial({color:c}))};
+function mesh(geo,c,x=0,y=0,z=0,parent){const m=new THREE.Mesh(geo,typeof c==='string'?mat(c):c);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;if(parent)parent.add(m);return m}
+const box=(g,w,h,d,c,x,y,z)=>mesh(new THREE.BoxGeometry(w,h,d),c,x,y,z,g);
+const cyl=(g,rt,rb,h,c,x,y,z,s=20)=>mesh(new THREE.CylinderGeometry(rt,rb,h,s),c,x,y,z,g);
+const sph=(g,r,c,x,y,z,sx=1,sy=1,sz=1)=>{const m=mesh(new THREE.SphereGeometry(r,18,14),c,x,y,z,g);m.scale.set(sx,sy,sz);return m};
+
+function labelSprite(text,{bg='rgba(255,250,240,.95)',fg='#3b3226',size=34,w=Math.max(180,text.length*40+50)}={}){
+  const c=document.createElement('canvas');c.width=w;c.height=64;const x=c.getContext('2d');
+  x.fillStyle=bg;x.beginPath();x.roundRect(2,6,w-4,52,26);x.fill();x.strokeStyle='#3b3226';x.lineWidth=3;x.stroke();
+  x.fillStyle=fg;x.font=`${size}px Jua, 'Gowun Dodum', sans-serif`;x.textAlign='center';x.textBaseline='middle';x.fillText(text,w/2,33);
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false}));
+  s.scale.set(w/64*0.55,0.55,1);return s;
+}
+function emojiSprite(e,size=1){
+  const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');
+  x.font='96px "Segoe UI Emoji","Apple Color Emoji",sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(e,64,70);
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true}));s.scale.set(size,size,1);return s;
+}
+
+/* ============================================================
+   3D 아바타 (AvatarFigure.tsx 의 SVG 캐릭터 → 3D 캐릭터)
+   ============================================================ */
+function buildAvatar(cfg){
+  const g=new THREE.Group();const dark='#2b2b2b';
+  const skin=mat(cfg.skin),hair=mat(cfg.hair),top=mat(cfg.top),bot=mat(cfg.bottom);
+  const A={group:g};
+  // 다리
+  const legH=0.5,shorts=cfg.bottomStyle==='shorts',skirt=cfg.bottomStyle==='skirt';
+  const mkLeg=(sx)=>{const p=new THREE.Group();p.position.set(sx*0.14,0.5,0);
+    const upperLen=shorts?0.22:skirt?0.0:legH;
+    if(upperLen>0)cyl(p,0.1,0.095,upperLen,bot,0,-upperLen/2,0,12);
+    if(upperLen<legH)cyl(p,0.085,0.08,legH-upperLen,skin,0,-upperLen-(legH-upperLen)/2,0,12);
+    sph(p,0.11,'#4a3b32',0,-legH+0.04,0.04,1,0.6,1.3);g.add(p);return p};
+  A.legL=mkLeg(-1);A.legR=mkLeg(1);
+  // 몸통
+  const body=new THREE.Group();g.add(body);A.body=body;
+  cyl(body,0.27,0.3,0.62,top,0,0.82,0,20);
+  sph(body,0.27,top,0,1.12,0,1,0.45,0.9);
+  if(skirt){cyl(body,0.3,0.46,0.3,bot,0,0.52,0,20)}
+  if(cfg.topStyle==='hoodie'){sph(body,0.2,top,0,1.14,-0.2,1.2,0.8,0.8);box(body,0.22,0.16,0.02,shadeC(cfg.top,-25),0,0.66,0.3)}
+  if(cfg.topStyle==='uniform'){box(body,0.34,0.07,0.1,'#f7f5ef',0,1.1,0.25);box(body,0.07,0.28,0.03,'#e2574c',0,0.95,0.3)}
+  if(cfg.topStyle==='stripe'){for(let i=0;i<3;i++){const t=new THREE.Mesh(new THREE.CylinderGeometry(0.285+i*0.01,0.285+i*0.01,0.07,20),mat('#f7f5ef'));t.position.set(0,0.65+i*0.17,0);body.add(t)}}
+  if(cfg.topStyle==='overall'){box(body,0.34,0.3,0.05,bot,0,0.78,0.27);box(body,0.06,0.3,0.05,bot,-0.14,1.0,0.25);box(body,0.06,0.3,0.05,bot,0.14,1.0,0.25)}
+  // 팔
+  const mkArm=(sx)=>{const p=new THREE.Group();p.position.set(sx*0.36,1.08,0);
+    mesh(new THREE.CapsuleGeometry(0.08,0.34,4,10),skin,0,-0.2,0,p);cyl(p,0.092,0.092,0.14,top,0,-0.05,0,12);g.add(p);return p};
+  A.armL=mkArm(-1);A.armR=mkArm(1);
+  // 머리
+  const head=new THREE.Group();head.position.y=1.55;g.add(head);A.head=head;
+  sph(head,0.42,skin,0,0,0,1,0.96,1);
+  // 볼터치
+  [-1,1].forEach(s=>sph(head,0.06,'#ff9fb0',s*0.26,-0.08,0.33,1,0.6,0.4));
+  // 눈
+  const eyeY=0.03,eyeX=0.15,eyeZ=0.385;
+  const arc=(x,y,z,r,t,flip)=>{const m=mesh(new THREE.TorusGeometry(r,t,6,14,Math.PI),dark,x,y,z,head);if(flip)m.rotation.z=Math.PI;m.castShadow=false};
+  [-1,1].forEach(s=>{
+    const wink=cfg.face==='wink'&&s===-1;
+    if(cfg.eyes==='happy'||wink)arc(s*eyeX,eyeY-0.015,eyeZ,0.05,0.014,false);
+    else{const r=cfg.eyes==='sparkle'?0.065:0.05;sph(head,r,dark,s*eyeX,eyeY,eyeZ,1,1.15,0.5);
+      if(cfg.eyes==='sparkle')sph(head,0.02,'#fff',s*eyeX+0.02,eyeY+0.03,eyeZ+0.03)}
+  });
+  // 입
+  const mz=0.405,my=-0.13;
+  if(cfg.face==='smile'||cfg.face==='wink')arc(0,my+0.035,mz,0.06,0.013,true);
+  else if(cfg.face==='cheerful'){const m=mesh(new THREE.SphereGeometry(0.075,12,8,0,Math.PI*2,Math.PI/2,Math.PI/2),'#b83d52',0,my+0.03,mz-0.01,head);m.rotation.x=-0.2;m.castShadow=false}
+  else if(cfg.face==='wow')sph(head,0.04,dark,0,my,mz,1,1.2,0.5);
+  else if(cfg.face==='calm')box(head,0.1,0.014,0.01,dark,0,my,mz);
+  // 머리카락
+  const cap=(r=0.465,tilt=-0.32,frac=0.55)=>{const m=mesh(new THREE.SphereGeometry(r,24,16,0,Math.PI*2,0,Math.PI*frac),hair,0,0,0,head);m.rotation.x=tilt;m.scale.y=0.98;return m};
+  const hs=cfg.hairStyle;
+  if(hs==='short'){cap()}
+  else if(hs==='long'){cap();box(head,0.86,0.9,0.2,hair,0,-0.28,-0.3);sph(head,0.1,hair,0.4,-0.5,-0.1);sph(head,0.1,hair,-0.4,-0.5,-0.1)}
+  else if(hs==='curly'){cap(0.45,-0.3,0.5);for(let i=0;i<10;i++){const a=i/10*Math.PI*2;sph(head,0.14,hair,Math.sin(a)*0.36,0.28+(i%2)*0.04,Math.cos(a)*0.36-0.04)}sph(head,0.18,hair,0,0.45,-0.05)}
+  else if(hs==='cap'){cap(0.47,-0.2,0.5);const b=box(head,0.56,0.04,0.34,hair,0,0.2,0.42);b.rotation.x=0.18}
+  else if(hs==='wave'){cap();[-1,1].forEach(s=>{sph(head,0.16,hair,s*0.4,-0.12,-0.05,1,1.6,1);sph(head,0.12,hair,s*0.38,-0.38,0.0)})}
+  else if(hs==='bob'){cap(0.47,-0.28,0.58);sph(head,0.46,hair,0,-0.12,-0.12,1,0.8,0.9);[-1,1].forEach(s=>box(head,0.09,0.3,0.42,hair,s*0.4,-0.12,0.0))}
+  else if(hs==='ponytail'){cap();sph(head,0.14,hair,0,0.1,-0.5,1,1,1);sph(head,0.12,hair,0,-0.15,-0.56,1,2.4,1)}
+  else if(hs==='bun'){cap();sph(head,0.19,hair,0,0.48,-0.05)}
+  else if(hs==='spiky'){cap(0.45,-0.2,0.45);for(let i=0;i<8;i++){const a=i/8*Math.PI*2;const c=mesh(new THREE.ConeGeometry(0.1,0.3,8),hair,Math.sin(a)*0.3,0.42,Math.cos(a)*0.3,head);c.rotation.z=-Math.sin(a)*0.5;c.rotation.x=Math.cos(a)*0.5}}
+  // 장신구
+  const ac=cfg.accessory;
+  if(ac==='glasses'||ac==='sunglasses'){[-1,1].forEach(s=>{
+    if(ac==='glasses'){const m=mesh(new THREE.TorusGeometry(0.1,0.015,6,16),'#263746',s*eyeX,eyeY,eyeZ+0.02,head);m.castShadow=false}
+    else{const m=mesh(new THREE.CylinderGeometry(0.105,0.105,0.03,16),'#1f2b36',s*eyeX,eyeY,eyeZ+0.02,head);m.rotation.x=Math.PI/2;m.castShadow=false}});
+    box(head,0.1,0.015,0.015,'#263746',0,eyeY,eyeZ+0.03)}
+  if(ac==='headband'){const m=mesh(new THREE.TorusGeometry(0.44,0.035,8,28),'#e2574c',0,0.12,-0.02,head);m.rotation.x=Math.PI/2-0.25;m.scale.set(1,1,1)}
+  if(ac==='bow'){const b=new THREE.Group();b.position.set(0.28,0.4,0.18);head.add(b);
+    [-1,1].forEach(s=>{const c=mesh(new THREE.ConeGeometry(0.1,0.18,8),'#d15a9a',s*0.1,0,0,b);c.rotation.z=s*-Math.PI/2});sph(b,0.05,'#b03f7e',0,0,0)}
+  if(ac==='beanie'){const m=mesh(new THREE.SphereGeometry(0.5,22,14,0,Math.PI*2,0,Math.PI*0.5),'#f2a33c',0,0.02,0,head);m.rotation.x=-0.2;sph(head,0.09,'#fff',0,0.55,-0.1)}
+  A.mats={skin,hair,top,bot};
+  g.traverse(o=>{if(o.isMesh)o.castShadow=true});
+  A.animate=(t,amt)=>{
+    const s=Math.sin(t*11)*0.9*amt;
+    A.legL.rotation.x=s;A.legR.rotation.x=-s;A.armL.rotation.x=-s*0.9;A.armR.rotation.x=s*0.9;
+    g.position.y=Math.abs(Math.sin(t*11))*0.08*amt;
+    body.rotation.z=Math.sin(t*5.5)*0.04*amt;
+    head.rotation.z=Math.sin(t*5.5)*0.05*amt;
+    const idle=Math.sin(t*2)*0.012*(1-amt);body.scale.y=1+idle;
+  };
+  return A;
+}
+function shadeC(hex,amt){const n=parseInt(hex.slice(1),16);const f=v=>Math.max(0,Math.min(255,v+amt));return '#'+((f((n>>16)&255)<<16)|(f((n>>8)&255)<<8)|f(n&255)).toString(16).padStart(6,'0')}
+const rndPick=a=>a[Math.floor(Math.random()*a.length)];
+const randomAvatar=(name)=>({displayName:name,skin:rndPick(SKINS),hair:rndPick(HAIRS),hairStyle:rndPick(HAIR_STYLES),top:rndPick(CLOTHES),topStyle:rndPick(TOP_STYLES),bottom:rndPick(['#3a4a5a','#4a3b32','#6b7a8f','#2b3a55','#8a6fd1']),bottomStyle:rndPick(BOTTOM_STYLES),face:rndPick(FACES),eyes:rndPick(EYES),accessory:rndPick(ACCS)});
+
+/* ============================================================
+   씬 관리 · 플레이어 · NPC
+   ============================================================ */
+const player={group:new THREE.Group(),av:null,target:null,speed:5.2,facing:0,label:null};
+scene.add(player.group);
+function rebuildPlayer(){
+  player.group.clear();player.av=buildAvatar(S.avatar);player.group.add(player.av.group);
+  player.label=labelSprite(S.avatar.displayName||'나',{bg:'rgba(255,224,130,.97)'});player.label.position.y=2.55;player.group.add(player.label);
+}
+let cur=null;
+const keys={};
+let zoom=1,uiLock=0; // uiLock>0 이면 이동 불가
+let clock=new THREE.Clock(),T=0;
+
+function newWorld(opts){return {group:new THREE.Group(),colliders:[],interacts:[],npcs:[],tick:[],bounds:opts.bounds,cam:opts.cam||[0,12,11],sky:opts.sky||'#bfe8ff',spawn:opts.spawn||[0,0],name:opts.name,speedy:[]}}
+function addNPC(w,{cfg,x,z,name,lines,wander=true,label,onTalk,range=6,home}){
+  const av=buildAvatar(cfg);const g=av.group;g.position.set(x,0,z);
+  const lb=labelSprite(label||name);lb.position.y=2.55;g.add(lb);w.group.add(g);
+  const n={av,g,name,state:{tx:x,tz:z,wait:Math.random()*2,talking:false},wander,range,home:home||[x,z],lines};
+  w.npcs.push(n);
+  w.interacts.push({obj:g,r:2.4,label:`${name}에게 말 걸기`,fn:async()=>{
+    n.state.talking=true;const d=new THREE.Vector3().subVectors(player.group.position,g.position);g.rotation.y=Math.atan2(d.x,d.z);
+    try{ if(onTalk)await onTalk(n); else await say(name,rndPick(lines)); }finally{n.state.talking=false}}});
+  return n;
+}
+function updateNPCs(dt,w){
+  for(const n of w.npcs){const s=n.state,p=n.g.position;let moving=false;
+    if(n.wander&&!s.talking){
+      if(s.wait>0){s.wait-=dt}
+      else{const dx=s.tx-p.x,dz=s.tz-p.z,d=Math.hypot(dx,dz);
+        if(d<0.3){s.wait=1.5+Math.random()*3;const a=Math.random()*Math.PI*2,r=Math.random()*n.range;s.tx=n.home[0]+Math.cos(a)*r;s.tz=n.home[1]+Math.sin(a)*r;if(!inBounds(w,s.tx,s.tz)){s.tx=n.home[0];s.tz=n.home[1]}}
+        else{const sp=2.2*dt;p.x+=dx/d*sp;p.z+=dz/d*sp;n.g.rotation.y=Math.atan2(dx,dz);moving=true}}
+    }
+    n.av.animate(T+n.home[0],moving?1:0);
+  }
+}
+function inBounds(w,x,z){const b=w.bounds;if(b.r)return Math.hypot(x,z)<b.r-0.5;return x>b.x1&&x<b.x2&&z>b.z1&&z<b.z2}
+function collide(w,p,r=0.45){
+  for(const c of w.colliders){
+    if(c.r!==undefined){const dx=p.x-c.x,dz=p.z-c.z,d=Math.hypot(dx,dz),m=c.r+r;if(d<m&&d>0.0001){p.x=c.x+dx/d*m;p.z=c.z+dz/d*m}}
+    else{const nx=Math.max(c.x1,Math.min(p.x,c.x2)),nz=Math.max(c.z1,Math.min(p.z,c.z2));const dx=p.x-nx,dz=p.z-nz,d=Math.hypot(dx,dz);
+      if(d<r){if(d>0.0001){p.x=nx+dx/d*r;p.z=nz+dz/d*r}else{const l=p.x-c.x1,rr=c.x2-p.x,t=p.z-c.z1,b=c.z2-p.z,m=Math.min(l,rr,t,b);if(m===l)p.x=c.x1-r;else if(m===rr)p.x=c.x2+r;else if(m===t)p.z=c.z1-r;else p.z=c.z2+r}}}
+  }
+  const b=w.bounds;
+  if(b.r){const d=Math.hypot(p.x,p.z);if(d>b.r-1){p.x*=(b.r-1)/d;p.z*=(b.r-1)/d}}
+  else{p.x=Math.max(b.x1+0.6,Math.min(b.x2-0.6,p.x));p.z=Math.max(b.z1+0.6,Math.min(b.z2-0.6,p.z))}
+}
+
+async function goScene(name,spawn){
+  fadeEl.classList.add('on');await sleep(380);
+  if(cur)scene.remove(cur.group);
+  cur=SCENES[name]();scene.add(cur.group);
+  scene.background=new THREE.Color(cur.sky);scene.fog=cur.fog||new THREE.Fog(cur.sky,60,170);
+  const sp=spawn||cur.spawn;player.group.position.set(sp[0],0,sp[1]);player.target=null;
+  if(name!=='creator'){player.group.visible=true}
+  snapCamera();refreshHud();
+  await sleep(120);fadeEl.classList.remove('on');
+  if(cur.onEnter)cur.onEnter();
+}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const fadeEl=document.getElementById('fade');
+
+/* ===== 건물/소품 헬퍼 ===== */
+function tree(w,x,z,s=1,c1='#5fb36a',fruit){
+  const g=new THREE.Group();g.position.set(x,0,z);
+  cyl(g,0.22*s,0.3*s,1.8*s,'#8b5e3c',0,0.9*s,0,8);
+  sph(g,1.35*s,c1,0,2.6*s,0,1,0.95,1);sph(g,0.95*s,shadeC(c1,12),0.6*s,3.2*s,0.2*s);sph(g,0.8*s,shadeC(c1,-10),-0.7*s,2.9*s,-0.3*s);
+  if(fruit){for(let i=0;i<5;i++){const a=i*1.3;sph(g,0.12*s,fruit,Math.cos(a)*1.1*s,2.3*s+Math.sin(i*2)*0.4*s,Math.sin(a)*1.1*s)}}
+  w.group.add(g);w.colliders.push({x,z,r:0.5*s});return g;
+}
+function flowers(w,n,rad,cx=0,cz=0,skipR=0){
+  const cols=['#ff8fab','#ffd166','#fff','#c9a7ff','#ff9f68'];
+  for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,r=skipR+Math.random()*(rad-skipR);const x=cx+Math.cos(a)*r,z=cz+Math.sin(a)*r;
+    cyl(w.group,0.02,0.02,0.25,'#4fa05a',x,0.12,z,4);sph(w.group,0.1,rndPick(cols),x,0.3,z,1,0.6,1).castShadow=false}
+}
+function building(w,{x,z,bw,bd,bh,color,roof,sign,door=true}){
+  const g=new THREE.Group();g.position.set(x,0,z);w.group.add(g);
+  box(g,bw,bh,bd,color,0,bh/2,0);
+  box(g,bw+0.5,0.35,bd+0.5,shadeC(color,-30),0,0.17,0);
+  const r=mesh(new THREE.ConeGeometry(bw*0.78,2.6,4),roof,0,bh+1.3,0,g);r.rotation.y=Math.PI/4;r.scale.z=bd/bw;
+  for(const bx of [-0.5,-0.25,0,0.25,0.5])box(g,0.22,bh,0.12,'#7a4f2d',bx*bw,bh/2,bd/2+0.03);box(g,bw,0.22,0.14,'#7a4f2d',0,bh*0.55,bd/2+0.04);
+  for(const sx of [-1,1]){cyl(g,1.5,1.5,bh+1.2,color,sx*(bw/2+0.4),(bh+1.2)/2,bd/2-0.2,20);mesh(new THREE.ConeGeometry(1.9,2.4,20),roof,sx*(bw/2+0.4),bh+2.4,bd/2-0.2,g)}
+  // 창문
+  for(const sx of [-1,1]){for(const yy of [bh*0.35,bh*0.72]){box(g,1.3,1.2,0.15,'#ffffff',sx*bw*0.3,yy,bd/2+0.02);box(g,1.1,1.0,0.17,'#9bd8f5',sx*bw*0.3,yy,bd/2+0.03)}}
+  if(door){box(g,1.8,2.7,0.2,'#7a5233',0,1.4,bd/2+0.05);box(g,2.2,0.2,0.4,'#fff',0,2.85,bd/2+0.15);sph(g,0.08,'#ffd166',0.55,1.4,bd/2+0.2)}
+  const sp=labelSprite(sign,{size:36});sp.position.set(0,bh+3.4,bd/2);sp.scale.multiplyScalar(1.6);g.add(sp);
+  w.colliders.push({x1:x-bw/2,x2:x+bw/2,z1:z-bd/2,z2:z+bd/2});
+  return g;
+}
+
+/* ===== 방(실내) 공통 ===== */
+function makeRoom(name,{W,D,floor,wall,sky='#fff1d6',deco}){
+  const w=newWorld({name,bounds:{x1:-W/2,x2:W/2,z1:-D/2,z2:D/2},cam:[0,10.5,9.5],sky,spawn:[0,D/2-2]});
+  const g=w.group;
+  const fl=mesh(new THREE.BoxGeometry(W,0.3,D),floor,0,-0.15,0,g);fl.castShadow=false;
+  box(g,W+0.6,6,0.3,wall,0,3,-D/2-0.15);box(g,0.3,6,D,wall,-W/2-0.15,3,0);box(g,0.3,6,D,wall,W/2+0.15,3,0);
+  box(g,W,0.35,0.2,shadeC(wall,-30),0,0.17,-D/2+0.1);
+  // 창문
+  for(const x of [-W*0.28,W*0.28]){box(g,2.4,2.2,0.15,'#fff',x,3.3,-D/2+0.05);box(g,2.1,1.9,0.17,'#a9defa',x,3.3,-D/2+0.07)}
+  // 출입 매트 + 나가기
+  box(g,3,0.06,1.5,'#d9a46a',0,0.03,D/2-1.0).castShadow=false;
+  const ex=emojiSprite('🚪',1.2);ex.position.set(0,1.3,D/2-1);g.add(ex);
+  w.interacts.push({x:0,z:D/2-0.9,r:1.8,label:'밖으로 나가기',fn:()=>exitRoom()});
+  return w;
+}
+async function exitRoom(){await goScene('campus',cur.exitTo||[0,-8])}
+
+function shelf(g,x,z,books=36,w=2.6,h=3.4,rot=0,colors){
+  const s=new THREE.Group();s.position.set(x,0,z);s.rotation.y=rot;g.add(s);
+  box(s,w,h,0.7,'#a9764a',0,h/2,0);box(s,w-0.2,h-0.2,0.5,'#6e4a2c',0,h/2,0.12);
+  const rows=4,per=Math.round(books/rows);
+  for(let r=0;r<rows;r++){box(s,w-0.1,0.08,0.7,'#a9764a',0,0.4+r*(h-0.5)/rows,0);
+    let xx=-w/2+0.2;for(let i=0;i<per;i++){const bw=0.14+Math.random()*0.12,bh=0.55+Math.random()*0.18,c=colors?rndPick(colors):rndPick(['#e2574c','#4aa3d8','#f2a33c','#7ac17a','#8a6fd1','#d15a9a','#f2d85c']);
+      if(xx+bw>w/2-0.15)break;box(s,bw,bh,0.4,c,xx+bw/2,0.45+r*(h-0.5)/rows+bh/2,0.2);xx+=bw+0.02}}
+  return s;
+}
+
+/* ============================================================
+   씬들
+   ============================================================ */
+const SCENES={};
+
+/* --- 캐릭터 만들기 무대 --- */
+SCENES.creator=()=>{
+  const w=newWorld({name:'creator',bounds:{r:10},cam:[0,0,0],sky:'#cdeeff'});
+  const g=mesh(new THREE.CylinderGeometry(3.2,3.4,0.4,40),'#9be39a',1.6,-0.2,0,w.group);
+  mesh(new THREE.CylinderGeometry(3.4,3.6,0.15,40),'#fff6df',1.6,-0.4,0,w.group);
+  tree(w,5.2,-2.5,0.8);tree(w,-1.2,-3.5,0.7,'#f4a6c1');
+  w.cam=null;w.creator=true;return w;
+};
+
+/* --- 캠퍼스(야외) --- */
+SCENES.campus=()=>{
+  const w=newWorld({name:'campus',bounds:{r:36},cam:[0,18,16],spawn:[0,12],sky:'#78c4ff'});w.fog=new THREE.Fog('#a8dcff',70,230);
+  const g=w.group;
+  
+  // 스카이로프풍: 구름바다 위에 떠 있는 섬
+  const sea=new THREE.Mesh(new THREE.CircleGeometry(400,48),new THREE.MeshLambertMaterial({color:'#ffffff'}));sea.rotation.x=-Math.PI/2;sea.position.y=-14;g.add(sea);
+  for(let i=0;i<46;i++){const an=Math.random()*Math.PI*2,r=45+Math.random()*160;sph(g,6+Math.random()*10,'#fff',Math.cos(an)*r,-12+Math.random()*3,Math.sin(an)*r,1.6,0.55,1.2).castShadow=false}
+  mesh(new THREE.CylinderGeometry(41.5,40,0.8,64),'#a78b6a',0,-1.0,0,g).castShadow=false;
+  mesh(new THREE.CylinderGeometry(40,6,16,24),'#8d7556',0,-9.2,0,g).castShadow=false;
+  mesh(new THREE.CylinderGeometry(42,41.6,0.5,64),'#7fd66f',0,-0.35,0,g).castShadow=false;
+  [[-58,-8,-30,7],[62,-4,-10,6],[40,-6,-70,9],[-50,-5,40,5]].forEach(([x,y,z,r])=>{mesh(new THREE.CylinderGeometry(r,r*0.3,r*0.9,14),'#8d7556',x,y-r*0.45,z,g);mesh(new THREE.CylinderGeometry(r*1.02,r,0.6,14),'#7fd66f',x,y+0.1,z,g)});
+  const wf=mesh(new THREE.BoxGeometry(2.4,13,0.4),'#bfeaff',0,-7,-41.5,g);wf.castShadow=false;
+  // 광장
+  mesh(new THREE.CylinderGeometry(10,10,0.12,40),'#f1e0b8',0,0.03,0,g).castShadow=false;
+  mesh(new THREE.CylinderGeometry(7,7,0.14,40),'#e8d09a',0,0.04,0,g).castShadow=false;
+  // 길
+  [-22,-8,8,22].forEach(x=>{const r=mesh(new THREE.BoxGeometry(3,0.1,22),'#f1e0b8',x*0.55,0.04,-12.5,g);r.castShadow=false;r.rotation.y=Math.atan2(x*0.45,22)*-1;r.position.x=x*0.5});
+  const road=mesh(new THREE.BoxGeometry(64,0.1,3.2),'#f1e0b8',0,0.05,-19.6,g);road.castShadow=false;
+  // 분수
+  const f=new THREE.Group();g.add(f);cyl(f,2.8,3,0.7,'#cfd8dc',0,0.35,0,28);cyl(f,2.4,2.4,0.72,'#7cd0f5',0,0.4,0,28);cyl(f,0.4,0.5,1.6,'#cfd8dc',0,1.1,0,12);cyl(f,1.2,1.2,0.25,'#cfd8dc',0,1.8,0,20);sph(f,0.35,'#8fdcff',0,2.1,0);
+  w.colliders.push({x:0,z:0,r:3.1});
+  // 건물 4채
+  const defs=[{k:'music',x:-24,sign:'🎵 음악실',color:'#fbeccd',roof:'#d9562f',room:'music'},{k:'library',x:-8,sign:'📚 도서관',color:'#f8e6c2',roof:'#c9452c',room:'library'},{k:'class',x:8,sign:'🏫 우리 반 교실',color:'#fdf0d2',roof:'#d9562f',room:'classroom'},{k:'art',x:24,sign:'🎨 미술실',color:'#fbeccd',roof:'#c9452c',room:'art'}];
+  const names={music:'음악실',library:'도서관',classroom:'우리 반 교실',art:'미술실'};
+  defs.forEach(d=>{
+    building(w,{x:d.x,z:-24,bw:12,bd:7,bh:5.2,color:d.color,roof:d.roof,sign:d.sign});
+    w.interacts.push({x:d.x,z:-19.6,r:2.6,label:`${names[d.room]} 들어가기`,fn:async()=>{await goScene(d.room)}});
+  });
+  // 게시판 (리그)
+  const bd=new THREE.Group();bd.position.set(13,0,6);bd.rotation.y=-0.5;g.add(bd);
+  box(bd,0.25,2.2,0.25,'#8b5e3c',-1.2,1.1,0);box(bd,0.25,2.2,0.25,'#8b5e3c',1.2,1.1,0);box(bd,3.2,2,0.2,'#fff7e0',0,2.2,0);box(bd,3.4,2.2,0.15,'#8b5e3c',0,2.2,-0.08);
+  const trophy=emojiSprite('🏆',1.4);trophy.position.set(0,2.2,0.2);bd.add(trophy);
+  const lb=labelSprite('독서 리그 게시판');lb.position.set(0,4.1,0);bd.add(lb);
+  w.colliders.push({x:13,z:6,r:1.8});
+  w.interacts.push({x:11.4,z:7.6,r:3,label:'독서 리그 게시판 보기',fn:()=>openLeague()});
+  // 연못
+  const pond=mesh(new THREE.CylinderGeometry(5,5,0.2,32),'#7cd0f5',-19,0.05,10,g);pond.castShadow=false;
+  w.colliders.push({x:-19,z:10,r:5.2});
+  cyl(g,5.4,5.5,0.12,'#e7d6a9',-19,0.03,10,32).castShadow=false;
+  // 벤치
+  [[-6,6,0.3],[6,-7,Math.PI]].forEach(([x,z,r])=>{const b=new THREE.Group();b.position.set(x,0,z);b.rotation.y=r;g.add(b);box(b,2.2,0.15,0.7,'#b7814f',0,0.55,0);box(b,2.2,0.7,0.12,'#b7814f',0,0.95,-0.3);box(b,0.12,0.5,0.6,'#6e4a2c',-0.9,0.25,0);box(b,0.12,0.5,0.6,'#6e4a2c',0.9,0.25,0);w.colliders.push({x1:x-1.2,x2:x+1.2,z1:z-0.6,z2:z+0.6})});
+  // 나무
+  [[-30,-6],[-28,12],[-16,22],[0,28],[18,24],[29,10],[31,-8],[-33,-18],[-12,-10],[12,-10],[20,16],[-22,26]].forEach(([x,z],i)=>tree(w,x,z,0.9+(i%3)*0.2,i%4===0?'#f4a6c1':'#5fb36a',i%5===0?'#ff9f68':undefined));
+  for(let a=0;a<28;a++){const r=34.5,ang=a/28*Math.PI*2;if(Math.sin(ang)<-0.55)continue;tree(w,Math.cos(ang)*r,Math.sin(ang)*r,1.1+Math.random()*0.4)}
+  flowers(w,160,34,0,0,11);
+  // 구름
+  for(let i=0;i<7;i++){const c=new THREE.Group();const x=-80+Math.random()*160,z=-60+Math.random()*60,y=22+Math.random()*10;c.position.set(x,y,z);
+    [[0,0,0,3],[2.6,-0.3,0.4,2.4],[-2.6,-0.4,0,2.2]].forEach(([a,b,cc,r])=>sph(c,r,'#fff',a,b,cc,1.2,0.6,1).castShadow=false);g.add(c);w.tick.push(dt=>{c.position.x+=dt*0.7;if(c.position.x>90)c.position.x=-90})}
+  // NPC 친구들
+  const lines=['도서관의 헤세 사서님께 책을 추천받았어! 진짜 잘 골라주셔.','학급 문고에 새 책이 들어왔대. 같이 읽자!','난 사물함에 로켓 피규어를 놨어. 구경하러 와~','독서 리그 골드 가고 싶다… 서평을 더 써야겠어.','미술실에서 AI로 책 표지를 만들 수 있어! 프롬프트 추천이 신기해.','음악실 피아노 쳐봤어? 소리가 예뻐.'];
+  const nn=[...NAMES].sort(()=>Math.random()-0.5).slice(0,6);
+  nn.forEach((nm,i)=>{const a=i/6*Math.PI*2;addNPC(w,{cfg:randomAvatar(nm),x:Math.cos(a)*7,z:Math.sin(a)*7+2,name:nm,lines,range:9,home:[Math.cos(a)*8,Math.sin(a)*8+2]})});
+  w.onEnter=()=>{ if(!S.seenIntro){S.seenIntro=true;save();intro()} };
+  w.exitTo=null;return w;
+};
+async function intro(){
+  await say('안내','북빌리지 스쿨에 온 걸 환영해요! 📖\n이곳은 고전과 인문학 책을 게임처럼 즐기는 학교예요.');
+  await say('안내','① 도서관에서 헤세 사서님께 책을 추천받아요.\n② 우리 반 교실의 학급 문고에서 독서 활동을 시작해요.\n③ 서평을 쓰고, 미술실에서 나만의 책 표지를 만들어요.\n④ 포인트로 사물함을 꾸미고, 독서 리그에서 티어를 올려요!');
+}
+
+/* --- 도서관 --- */
+SCENES.library=()=>{
+  const w=makeRoom('library',{W:22,D:15,floor:'#d9b98a',wall:'#f2e3c2'});const g=w.group;
+  w.exitTo=[-8,-19];
+  for(let i=0;i<5;i++)shelf(g,-8.5+i*4.25,-D(15)+0.2,40);
+  [[-10.2,-2],[10.2,-2]].forEach(([x,z])=>shelf(g,x,z,40,3,3.4,x<0?Math.PI/2:-Math.PI/2));
+  w.colliders.push({x1:-11.6,x2:-9.8,z1:-3.5,z2:-0.5},{x1:9.8,x2:11.6,z1:-3.5,z2:-0.5});
+  // 러그와 책상
+  cyl(g,4.2,4.2,0.05,'#e49a9a',0,0.03,2,32).castShadow=false;
+  const desk=new THREE.Group();desk.position.set(0,0,-3.2);g.add(desk);box(desk,4.4,0.2,1.5,'#8b5e3c',0,1.25,0);box(desk,4.0,1.2,1.3,'#a9764a',0,0.6,0);box(desk,0.5,0.15,0.4,'#e2574c',-1,1.43,0);box(desk,0.5,0.1,0.4,'#4aa3d8',-1,1.5,0);
+  const lamp=cyl(desk,0.05,0.05,0.7,'#444',1.5,1.65,0,6);sph(desk,0.25,'#ffe58a',1.5,2.1,0);
+  w.colliders.push({x1:-2.3,x2:2.3,z1:-4,z2:-2.4});
+  // 헤세
+  const hesse={displayName:'헤르만 헤세',skin:'#f7d7bd',hair:'#c9c9c9',hairStyle:'short',top:'#7a5a3a',topStyle:'uniform',bottom:'#3a4a5a',bottomStyle:'pants',face:'calm',eyes:'round',accessory:'glasses'};
+  addNPC(w,{cfg:hesse,x:0,z:-4.6,name:'헤르만 헤세',label:'📚 헤르만 헤세 사서',wander:false,onTalk:hesseTalk});
+  w.interacts[w.interacts.length-1].r=3.2;
+  // 읽는 친구들
+  const t=new THREE.Group();t.position.set(-6,0,4);g.add(t);cyl(t,1.4,1.4,0.15,'#c68b59',0,1,0,24);cyl(t,0.15,0.15,1,'#8b5e3c',0,0.5,0,8);w.colliders.push({x:-6,z:4,r:1.5});
+  [[-7.5,4.5,'지우'],[-4.6,3.3,'서연']].forEach(([x,z,n])=>addNPC(w,{cfg:randomAvatar(n),x,z,name:n,wander:false,lines:['쉿… 책 읽는 중이야 📖','"데미안"은 조금 어렵지만 멋져.','헤세 사서님이 추천해 주신 책은 항상 재밌어!']}));
+  w.exitTo=[-8,-19];return w;
+};
+const D=v=>v/2;
+
+async function hesseTalk(){
+  const n=Object.keys(S.books).length;
+  await say('헤르만 헤세','어서 오렴, '+S.avatar.displayName+'. 나는 이 도서관의 사서, 헤세란다.');
+  if(n===0)await say('헤르만 헤세','책은 나를 찾아가는 길 위의 등불이지. 오늘은 어떤 이야기를 만나고 싶니?');
+  else await say('헤르만 헤세','지금까지 '+n+'권을 학급 문고에 담았구나. 훌륭하다. 새 이야기가 필요하니?');
+  const c=await choose('헤르만 헤세','무엇을 도와줄까?',['책을 추천해 주세요','다음에 올게요']);
+  if(c===0)openRecommend();
+}
+
+function openRecommend(){
+  const m=openModal(`<h2>📚 헤세 사서의 추천 도서</h2><p class="mut">마음에 드는 책을 고르면 우리 반 학급 문고에 담겨요. 독서 활동은 교실에서 시작해요!</p><div class="cards" id="rc"></div>`,{cls:'wide'});
+  const box=m.querySelector('#rc');
+  Object.values(BOOKS).forEach(b=>{
+    const has=!!S.books[b.id];
+    const c=document.createElement('div');c.className='card';
+    c.innerHTML=`<div class="spine" style="background:${b.color}"></div><h3>${b.badge} ${b.title}</h3><div class="mut">${b.author} · 난이도 ${b.level}</div><p>${b.blurb}</p><p><b>추천 이유</b> ${b.why}</p><button class="btn ${has?'alt':''}" ${has?'disabled':''}>${has?'✔ 학급 문고에 있어요':'학급 문고에 담기'}</button>`;
+    c.querySelector('button').onclick=async()=>{S.books[b.id]={status:'new',date:new Date().toLocaleDateString('ko-KR')};save();toast(`『${b.title}』이(가) 학급 문고에 담겼어요!`);closeModal();await say('헤르만 헤세',`좋은 선택이구나. 『${b.title}』은(는) 우리 반 교실의 학급 문고에서 읽기 활동을 시작할 수 있단다.`)};
+    box.appendChild(c);
+  });
+}
+
+/* --- 우리 반 교실 --- */
+SCENES.classroom=()=>{
+  const W2=22,D2=16;
+  const w=makeRoom('classroom',{W:W2,D:D2,floor:'#e7c99b',wall:'#fdf2d0'});const g=w.group;w.exitTo=[8,-19];
+  // 칠판
+  box(g,7,2.8,0.2,'#6b4a2e',0,3.2,-D2/2+0.15);box(g,6.6,2.4,0.22,'#2f5d4a',0,3.2,-D2/2+0.18);
+  const cs=labelSprite('오늘의 독서 퀘스트: 한 권 읽고 서평 쓰기',{size:28,w:560});cs.position.set(0,3.3,-D2/2+0.5);cs.scale.multiplyScalar(0.8);g.add(cs);
+  // 책상
+  for(let r=0;r<2;r++)for(let c=0;c<3;c++){const x=-3+c*3,z=r*3.2-0.6;box(g,1.8,0.12,1.2,'#d9a46a',x,1.0,z);[[-0.8,-0.5],[0.8,-0.5],[-0.8,0.5],[0.8,0.5]].forEach(([a,b])=>box(g,0.08,1,0.08,'#8b5e3c',x+a,0.5,z+b));w.colliders.push({x1:x-0.9,x2:x+0.9,z1:z-0.6,z2:z+0.6})}
+  // 학급 문고
+  const sx=-8.2;shelf(g,-D2/2+0,0,0);
+  const lib=shelf(g,-W2/2+1.2,-3,48,5.2,3.6,Math.PI/2,['#e2574c','#4aa3d8','#f2a33c','#7ac17a','#8a6fd1']);
+  w.colliders.push({x1:-W2/2,x2:-W2/2+1.8,z1:-5.8,z2:-0.2});
+  const bl=labelSprite('📚 학급 문고');bl.position.set(-W2/2+1.8,4.6,-3);g.add(bl);
+  w.interacts.push({x:-W2/2+3,z:-3,r:3,label:'학급 문고 열기',fn:()=>openClassLibrary()});
+  // 문집 보드
+  const bd=new THREE.Group();bd.position.set(-7,0,-D2/2+0.5);bd.visible=true;
+  // 사물함 (오른쪽 벽)
+  const mine=2;
+  for(let i=0;i<6;i++){
+    const z=-5.2+i*2.1,lk=new THREE.Group();lk.position.set(W2/2-0.7,0,z);lk.rotation.y=-Math.PI/2;g.add(lk);
+    const isMine=i===mine;const theme=S.equipped.map(id=>SHOP.find(s=>s.id===id)).find(s=>s&&s.kind==='theme');
+    const col=isMine?(theme?theme.color:'#7fb2e5'):['#b9c6d4','#c8d6bd','#d9c8d9','#cfc4ae','#bcd2d9','#d4d0c0'][i];
+    box(lk,1.8,3.4,1.1,col,0,1.7,0);box(lk,1.6,3.2,0.05,shadeC(col,18),0,1.7,0.56);
+    for(let v=0;v<4;v++)box(lk,0.8,0.05,0.04,shadeC(col,-30),0,2.7+v*0.12,0.6);
+    sph(lk,0.07,'#ffd166',0.55,1.5,0.62);
+    const num=labelSprite(isMine?`${S.avatar.displayName||'나'}의 사물함`:`${i+1}번`,{size:30});num.position.set(0,3.9,0.6);num.scale.multiplyScalar(0.85);lk.add(num);
+    if(isMine){
+      // 배지 + 스티커 + 피규어
+      const badges=Object.entries(S.books).filter(([,b])=>b.status==='reviewed').map(([id])=>BOOKS[id].badge);
+      badges.forEach((b,k)=>{const s=emojiSprite(b,0.5);s.position.set(-0.45+(k%3)*0.45,2.3-Math.floor(k/3)*0.45,0.7);lk.add(s)});
+      S.equipped.map(id=>SHOP.find(s=>s.id===id)).filter(s=>s&&s.kind==='sticker').forEach((s,k)=>{const e=emojiSprite(s.emoji,0.55);e.position.set(-0.45+(k%3)*0.45,0.9-Math.floor(k/3)*0.45,0.7);lk.add(e)});
+      S.equipped.map(id=>SHOP.find(s=>s.id===id)).filter(s=>s&&s.kind==='figure').forEach((s,k)=>{const fg=new THREE.Group();fg.position.set(-0.45+k*0.5,3.4,0);lk.add(fg);
+        if(s.id==='fg_bear'){sph(fg,0.22,s.color,0,0.22,0);sph(fg,0.17,s.color,0,0.55,0);sph(fg,0.07,s.color,-0.12,0.7,0);sph(fg,0.07,s.color,0.12,0.7,0)}
+        else if(s.id==='fg_rocket'){cyl(fg,0.12,0.12,0.5,'#fff',0,0.35,0,12);mesh(new THREE.ConeGeometry(0.12,0.25,12),s.color,0,0.72,0,fg);box(fg,0.3,0.1,0.05,s.color,0,0.15,0)}
+        else{cyl(fg,0.14,0.1,0.2,'#c8794a',0,0.1,0,10);sph(fg,0.18,s.color,0,0.33,0);sph(fg,0.12,'#4fa05a',0.12,0.45,0)}});
+      lk.userData.mine=true;
+      w.interacts.push({x:W2/2-2.2,z,r:2.0,label:'내 사물함 열기',fn:()=>openLocker()});
+    }else w.interacts.push({x:W2/2-2.2,z,r:1.4,label:`${i+1}번 사물함 구경하기`,fn:async()=>say('안내','친구의 사물함이에요. 뱃지와 스티커가 가득하네요! (잠겨 있어요 🔒)')});
+  }
+  w.colliders.push({x1:W2/2-1.4,x2:W2/2,z1:-6.3,z2:6.2});
+  // 문집 전시대
+  const ex=new THREE.Group();ex.position.set(6,0,-6.5);g.add(ex);
+  box(ex,3.6,0.9,1.4,'#a9764a',0,0.45,0);const bk=box(ex,1.2,0.12,0.9,'#fff',0,0.96,0);bk.rotation.x=-0.2;
+  [-0.8,0,0.8].forEach((x,i)=>box(ex,0.6,0.7,0.15,['#e2574c','#4aa3d8','#f2a33c'][i],x,1.5,-0.3));
+  const exl=labelSprite('📖 디지털 학급 문집');exl.position.set(0,3,0);ex.add(exl);
+  w.colliders.push({x1:4.2,x2:7.8,z1:-7.2,z2:-5.8});
+  w.interacts.push({x:6,z:-4.8,r:2.6,label:'디지털 학급 문집 펼치기',fn:()=>openAnthology()});
+  // 상점
+  const shop=new THREE.Group();shop.position.set(-6.5,0,7.4-0.0);g.add(shop);
+  box(shop,3.4,1,1.2,'#ff9fb8',0,0.5,0);box(shop,3.8,0.15,1.5,'#fff',0,1.05,0);
+  const aw=mesh(new THREE.BoxGeometry(3.8,0.3,1.8),'#ffd166',0,2.9,0.3,shop);aw.rotation.x=0.3;box(shop,0.1,2.6,0.1,'#8b5e3c',-1.8,1.5,0.9);box(shop,0.1,2.6,0.1,'#8b5e3c',1.8,1.5,0.9);
+  const sl=labelSprite('🛍️ 구름 상점');sl.position.set(0,3.8,0.3);shop.add(sl);
+  w.colliders.push({x1:-8.4,x2:-4.6,z1:6.6,z2:8});
+  addNPC(w,{cfg:{displayName:'토토',skin:'#efc39a',hair:'#e8c76a',hairStyle:'bun',top:'#ff8fab',topStyle:'overall',bottom:'#f0f0f0',bottomStyle:'pants',face:'cheerful',eyes:'sparkle',accessory:'bow'},x:-6.5,z:6.1,name:'토토',label:'🛍️ 상점 토토',wander:false,onTalk:async()=>{await say('토토','어서 와요! 독서 포인트로 사물함을 꾸밀 수 있어요.');openShop()}});
+  // 친구들
+  addNPC(w,{cfg:randomAvatar('하윤'),x:2,z:3.5,name:'하윤',lines:['오늘 학급 문고에 새 책이 들어왔대!','서평에 해시태그 달면 문집에서 찾기 쉬워.','나는 사물함에 🍀 붙였어!'],range:4,home:[1,4]});
+  addNPC(w,{cfg:randomAvatar('이안'),x:-1,z:5,name:'이안',lines:['15소년 표류기 협동 게임, 같이 하면 훨씬 쉬워!','서평 쓰면 포인트 쏙쏙 올라가지~'],range:4,home:[-1,4.5]});
+  return w;
+};
+
+/* --- 미술실 --- */
+SCENES.art=()=>{
+  const w=makeRoom('art',{W:20,D:15,floor:'#e6dccb',wall:'#e7f3ff'});const g=w.group;w.exitTo=[24,-19];
+  // 전시 벽: 완성된 표지
+  const covers=Object.entries(S.books).filter(([,b])=>b.cover);
+  const slots=[-7,-3.5,0,3.5,7];
+  slots.forEach((x,i)=>{
+    const fr=box(g,2.6,3.4,0.15,'#8b5e3c',x,3.2,-7.4);
+    const c=covers[i];
+    if(c){const img=new Image();img.src=c[1].cover;const tx=new THREE.Texture(img);tx.colorSpace=THREE.SRGBColorSpace;img.onload=()=>{tx.needsUpdate=true};
+      const pl=new THREE.Mesh(new THREE.PlaneGeometry(2.3,3.05),new THREE.MeshBasicMaterial({map:tx}));pl.position.set(x,3.2,-7.3);g.add(pl)}
+    else box(g,2.3,3.05,0.05,'#fffaf0',x,3.2,-7.3);
+  });
+  const gl=labelSprite('🖼️ 우리 반 표지 갤러리');gl.position.set(0,5.4,-7);g.add(gl);
+  // 이젤
+  [[-4,-1.5],[4,-1.5]].forEach(([x,z],i)=>{const e=new THREE.Group();e.position.set(x,0,z);g.add(e);
+    [-0.7,0.7].forEach(s=>{const l=cyl(e,0.05,0.05,2.6,'#8b5e3c',s,1.3,0,6);l.rotation.z=-s*0.12});cyl(e,0.05,0.05,2,'#8b5e3c',0,1,-0.7,6).rotation.x=0.25;
+    box(e,1.6,2,0.08,'#fffaf0',0,1.9,0.1);box(e,1.4,0.2,0.3,'#8b5e3c',0,0.9,0.2);
+    sph(e,0.4,i?'#ff8fab':'#8fd3ff',0,1.9,0.16,1.6,1.2,0.1);sph(e,0.25,i?'#ffd166':'#b5ee9a',0.2,1.7,0.18,1.4,1,0.1);
+    w.colliders.push({x:x,z:z,r:0.9})});
+  const ez=labelSprite('✨ AI 표지 공방');ez.position.set(-4,3.6,-1.5);g.add(ez);
+  w.interacts.push({x:-4,z:0.3,r:2.8,label:'AI 책 표지 만들기',fn:()=>openCoverStudio()});
+  w.interacts.push({x:4,z:0.3,r:2.8,label:'AI 책 표지 만들기',fn:()=>openCoverStudio()});
+  // 책상 + 학생
+  box(g,5,0.15,1.6,'#d9a46a',0,1,5);[[-2.2,-0.6],[2.2,-0.6],[-2.2,0.6],[2.2,0.6]].forEach(([a,b])=>box(g,0.1,1,0.1,'#8b5e3c',a,0.5,5+b));w.colliders.push({x1:-2.6,x2:2.6,z1:4.2,z2:5.8});
+  addNPC(w,{cfg:randomAvatar('채원'),x:6,z:3,name:'채원',lines:['프롬프트에 "달빛"이나 "바다"를 넣으면 분위기가 확 바뀌어!','나는 픽셀 스타일로 만들었어. 완전 귀여워 👾'],range:3,home:[6,3]});
+  addNPC(w,{cfg:{displayName:'미술 선생님',skin:'#efc39a',hair:'#6b3f1d',hairStyle:'bun',top:'#8a6fd1',topStyle:'overall',bottom:'#3a4a5a',bottomStyle:'pants',face:'smile',eyes:'happy',accessory:'headband'},x:0,z:2.4,name:'미술 선생님',wander:false,onTalk:async()=>{await say('미술 선생님','읽고 난 뒤 마음속 장면을 표지로 그려 보자! 이젤 앞에서 프롬프트를 쓰면 돼. 스타일도 고를 수 있어요.')}});
+  return w;
+};
+
+/* --- 음악실 --- */
+SCENES.music=()=>{
+  const w=makeRoom('music',{W:20,D:15,floor:'#c9a7e8',wall:'#fde8f1'});const g=w.group;w.exitTo=[-24,-19];
+  // 피아노
+  const p=new THREE.Group();p.position.set(0,0,-4);g.add(p);
+  box(p,4.8,1.6,1.9,'#262626',0,1.0,0);box(p,4.4,0.2,1.2,'#fff',0,1.85,0.4);for(let i=0;i<8;i++)box(p,0.04,0.05,1.1,'#222',-1.9+i*0.54,1.97,0.4);
+  box(p,4.8,2.2,0.3,'#262626',0,2.6,-0.8);box(p,0.15,0.8,0.15,'#262626',-2.2,0.4,0.6);box(p,0.15,0.8,0.15,'#262626',2.2,0.4,0.6);
+  box(g,2.2,0.6,0.9,'#444',0,0.5,-2.6);
+  const pl=labelSprite('🎹 피아노');pl.position.set(0,4.2,-4);g.add(pl);
+  w.colliders.push({x1:-2.5,x2:2.5,z1:-5,z2:-3});
+  w.interacts.push({x:0,z:-2.0,r:2.5,label:'피아노 치기',fn:()=>openPiano()});
+  // 북과 악기 장식
+  [[-7,-2],[7,-2]].forEach(([x,z],i)=>{cyl(g,0.9,0.9,0.9,i?'#ff8fab':'#8fd3ff',x,0.6,z,20);cyl(g,0.92,0.92,0.1,'#fff',x,1.1,z,20);w.colliders.push({x,z,r:1})});
+  for(let i=0;i<5;i++){const e=emojiSprite(['🎷','🎺','🎻','🥁','🎸'][i],1.1);e.position.set(-6+i*3,4.6,-6.9);g.add(e)}
+  addNPC(w,{cfg:randomAvatar('수아'),x:5,z:2,name:'수아',lines:['피아노 소리를 들으면 책 속 장면이 떠올라.','「어린 왕자」를 읽을 땐 잔잔한 음악이 어울려.'],range:4,home:[5,2]});
+  addNPC(w,{cfg:{displayName:'음악 선생님',skin:'#f7d7bd',hair:'#23180f',hairStyle:'long',top:'#e2574c',topStyle:'tee',bottom:'#3a4a5a',bottomStyle:'skirt',face:'cheerful',eyes:'happy',accessory:'none'},x:-5,z:3,name:'음악 선생님',wander:false,onTalk:async()=>say('음악 선생님','책을 읽고 떠오른 분위기를 건반으로 표현해 볼까요? 숫자 1~8 키를 눌러도 소리가 나요!')});
+  return w;
+};
+
+/* ============================================================
+   게임 UI: 대화 · 모달 · 토스트 · HUD
+   ============================================================ */
+const $=s=>document.querySelector(s);
+const dlg=$('#dialog'),promptBtn=$('#prompt');
+let dlgResolve=null,dlgChoices=false;
+function say(name,text){return new Promise(res=>{uiLock++;dlg.style.display='block';dlg.querySelector('.nm').textContent=name;dlg.querySelector('.tx').textContent=text.replace(/\{name\}/g,S?.avatar.displayName||'나');
+  dlg.querySelector('.ch').innerHTML='';dlg.querySelector('.nx').style.display='';dlgChoices=false;dlgResolve=()=>{dlg.style.display='none';uiLock--;dlgResolve=null;res()}})}
+function choose(name,text,opts){return new Promise(res=>{uiLock++;dlg.style.display='block';dlg.querySelector('.nm').textContent=name;dlg.querySelector('.tx').textContent=text.replace(/\{name\}/g,S?.avatar.displayName||'나');
+  const ch=dlg.querySelector('.ch');ch.innerHTML='';dlg.querySelector('.nx').style.display='none';dlgChoices=true;dlgResolve=null;
+  opts.forEach((o,i)=>{const b=document.createElement('button');b.className='btn alt';b.textContent=o;b.onclick=e=>{e.stopPropagation();dlg.style.display='none';uiLock--;dlgChoices=false;res(i)};ch.appendChild(b)})})}
+dlg.addEventListener('click',()=>{if(dlgResolve&&!dlgChoices)dlgResolve()});
+
+let modalEl=null,modalClose=null;
+function openModal(html,{cls='',onClose}={}){closeModal(true);uiLock++;
+  const m=document.createElement('div');m.className='modal-back';m.innerHTML=`<div class="modal ${cls}"><button class="x" aria-label="닫기">✕</button>${html}</div>`;
+  $('#ui').appendChild(m);modalEl=m;modalClose=onClose;
+  m.querySelector('.x').onclick=()=>closeModal();m.addEventListener('mousedown',e=>{if(e.target===m)closeModal()});
+  return m.querySelector('.modal')}
+function closeModal(silent){if(!modalEl)return;modalEl.remove();modalEl=null;uiLock--;const f=modalClose;modalClose=null;if(f&&!silent)f()}
+function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;$('#toast').appendChild(d);setTimeout(()=>d.remove(),3100)}
+function refreshHud(){
+  if(!S)return;const t=tierOf(myScore());
+  $('#me').innerHTML=`<b>${S.avatar.displayName||'나'}</b> · 💰 ${S.points}P · ${t.e} ${t.n} · 📚 ${completedCount()}권`;
+  const bs=Object.entries(S.books);let q;
+  if(!bs.length)q=['도서관에서 책 고르기','🏫 캠퍼스 위쪽 <b>도서관</b>에 가서 헤르만 헤세 사서님을 만나요.'];
+  else{const nw=bs.find(([,b])=>b.status!=='reviewed');
+    if(nw)q=['독서 활동 하기',`🏫 <b>우리 반 교실</b> 학급 문고에서 『${BOOKS[nw[0]].title}』 활동을 시작해요.`];
+    else if(bs.some(([,b])=>!b.cover))q=['표지 만들기','🎨 <b>미술실</b>에서 AI로 나만의 책 표지를 만들어요. (+20P)'];
+    else q=['다음 책 고르기','📚 도서관에서 새 책을 추천받거나, 상점에서 사물함을 꾸며 보세요!']}
+  $('#quest').innerHTML=`<div class="t">📌 ${q[0]}</div>${q[1]}`;
+}
+
+/* ===== 입력 ===== */
+addEventListener('keydown',e=>{
+  if(e.target.matches('input,textarea'))return;
+  const k=e.key.toLowerCase();
+  if(dlg.style.display==='block'){if(['e',' ','enter'].includes(k)&&dlgResolve&&!dlgChoices){e.preventDefault();dlgResolve()}return}
+  if(k==='escape'){closeModal();return}
+  if(modalEl){pianoKey(k,true);return}
+  keys[k]=true;
+  if((k==='e'||k===' '||k==='enter')&&!e.repeat){e.preventDefault();doInteract()}
+  if(k.startsWith('arrow')||k===' ')e.preventDefault();
+});
+addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;if(modalEl)pianoKey(e.key.toLowerCase(),false)});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false});
+canvas.addEventListener('wheel',e=>{zoom=Math.max(0.55,Math.min(1.7,zoom+Math.sign(e.deltaY)*0.08))},{passive:true});
+const ray=new THREE.Raycaster(),ndc=new THREE.Vector2(),plane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+canvas.addEventListener('pointerdown',e=>{
+  if(!cur||cur.creator||uiLock>0||e.button!==0)return;
+  ndc.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);ray.setFromCamera(ndc,camera);
+  const p=new THREE.Vector3();if(ray.ray.intersectPlane(plane,p)){
+    // 근처 상호작용 지점을 직접 누르면 상호작용
+    const hit=cur.interacts.find(it=>{const q=ipos(it);return Math.hypot(q.x-p.x,q.z-p.z)<1.4&&Math.hypot(q.x-player.group.position.x,q.z-player.group.position.z)<it.r+0.5});
+    if(hit){hit.fn();return}
+    player.target=p;}
+});
+promptBtn.addEventListener('click',()=>doInteract());
+const ipos=it=>it.obj?{x:it.obj.position.x,z:it.obj.position.z}:{x:it.x,z:it.z};
+let nearest=null;
+function doInteract(){if(nearest&&uiLock===0)nearest.fn()}
+
+/* ============================================================
+   업데이트 루프
+   ============================================================ */
+const camPos=new THREE.Vector3(),camLook=new THREE.Vector3();
+function snapCamera(){if(!cur||cur.creator)return;const p=player.group.position;const o=cur.cam;camPos.set(p.x+o[0]*zoom,o[1]*zoom,p.z+o[2]*zoom);camLook.set(p.x,1,p.z);camera.position.copy(camPos);camera.lookAt(camLook)}
+function update(dt){
+  T+=dt;
+  if(!cur){return}
+  if(cur.creator){
+    camera.position.set(0,2.4,6.2);camera.lookAt(0,1.2,0);
+    if(player.av){player.group.position.set(1.6,0,0);player.group.rotation.y+=dt*0.8;player.av.animate(T,0)}
+    sun.position.set(6,12,8);sun.target.position.set(0,0,0);
+    return;
+  }
+  // 이동
+  let mx=0,mz=0;
+  if(uiLock===0){
+    if(keys['w']||keys['arrowup'])mz-=1;if(keys['s']||keys['arrowdown'])mz+=1;if(keys['a']||keys['arrowleft'])mx-=1;if(keys['d']||keys['arrowright'])mx+=1;
+    if(mx||mz){player.target=null}
+    else if(player.target){const dx=player.target.x-player.group.position.x,dz=player.target.z-player.group.position.z,d=Math.hypot(dx,dz);if(d<0.25)player.target=null;else{mx=dx/d;mz=dz/d}}
+  }
+  const moving=!!(mx||mz);
+  if(moving){const l=Math.hypot(mx,mz);mx/=l;mz/=l;const p=player.group.position;
+    const sp=player.speed*dt*(keys['shift']?1.5:1);const px=p.x,pz=p.z;
+    p.x+=mx*sp;p.z+=mz*sp;collide(cur,p);
+    if(player.target&&Math.hypot(p.x-px-mx*sp,p.z-pz-mz*sp)>0.2*sp+0.01&&Math.hypot(p.x-px,p.z-pz)<sp*0.3)player.target=null;
+    const ta=Math.atan2(mx,mz);let da=ta-player.facing;da=Math.atan2(Math.sin(da),Math.cos(da));player.facing+=da*Math.min(1,dt*14);player.group.rotation.y=player.facing}
+  player.av.animate(T,moving?1:0);
+  updateNPCs(dt,cur);cur.tick.forEach(f=>f(dt));
+  // 상호작용 탐색
+  let best=null,bd=1e9;const pp=player.group.position;
+  for(const it of cur.interacts){const q=ipos(it),d=Math.hypot(q.x-pp.x,q.z-pp.z);if(d<it.r&&d<bd){bd=d;best=it}}
+  nearest=uiLock>0?null:best;
+  if(nearest){promptBtn.style.display='block';promptBtn.innerHTML=`<kbd>E</kbd>${nearest.label}`}else promptBtn.style.display='none';
+  // 카메라
+  const o=cur.cam;const tx=pp.x+o[0]*zoom,ty=o[1]*zoom,tz=pp.z+o[2]*zoom;
+  const k=1-Math.pow(0.001,dt);camPos.x+=(tx-camPos.x)*k;camPos.y+=(ty-camPos.y)*k;camPos.z+=(tz-camPos.z)*k;
+  camLook.x+=(pp.x-camLook.x)*k;camLook.z+=(pp.z-camLook.z)*k;camLook.y=1.1;
+  camera.position.copy(camPos);camera.lookAt(camLook);
+  sun.position.set(pp.x+14,pp.y+26,pp.z+10);sun.target.position.copy(pp);
+}
+function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),0.05);update(dt);renderer.render(scene,camera)}
+
+/* ============================================================
+   독서 활동
+   ============================================================ */
+function bookStatusText(b){return {new:'읽기 전',storyDone:'서평 쓰기 전',reviewed:'완료 ✔'}[b.status]}
+function openClassLibrary(){
+  const ids=Object.keys(S.books);
+  const m=openModal(`<h2>📚 우리 반 학급 문고</h2><p class="mut">도서관에서 담아 온 책이 모여 있어요. 책을 골라 독서 활동을 시작해 보세요.</p><div class="cards" id="cl"></div>`,{cls:'wide'});
+  const box=m.querySelector('#cl');
+  if(!ids.length){box.innerHTML='<p>아직 책이 없어요. 도서관의 헤세 사서님을 만나 보세요!</p>';return}
+  ids.forEach(id=>{const b=BOOKS[id],st=S.books[id];
+    const c=document.createElement('div');c.className='card';
+    const act=id==='boys15'?'협동 게임 + 인터랙티브 스토리':'인터랙티브 스토리텔링';
+    c.innerHTML=`<div class="spine" style="background:${b.color}"></div><h3>${b.badge} ${b.title}</h3><div class="mut">${bookStatusText(st)}</div><p>🎮 ${act}</p><button class="btn">${st.status==='reviewed'?'다시 보기':st.status==='storyDone'?'서평 쓰기':'활동 시작'}</button>`;
+    c.querySelector('button').onclick=()=>{closeModal();if(st.status==='reviewed')openMyBooks(id);else runActivity(id)};box.appendChild(c)});
+}
+async function runActivity(id){
+  const b=BOOKS[id],st=S.books[id];
+  if(st.status==='new'){
+    if(id==='boys15'){await say('안내','먼저 친구들과 함께 무인도에서 살아남아 보아요! 🏝️ 불·물·식량이 꺼지지 않게 눌러서 지켜 주세요. 친구들도 도와줘요.');
+      const ok=await coopGame();if(!ok)return}
+    const res=await playStory(b);if(!res)return;
+    st.story=res;st.status='storyDone';save();
+  }
+  const rv=await writeReview(b);if(!rv){toast('서평은 언제든 이어서 쓸 수 있어요 ✏️');return}
+  st.review=rv;st.status='reviewed';
+  const gain=40+Math.min(20,Math.floor(rv.text.length/10));S.points+=gain;save();
+  await rewardModal(b,gain);
+}
+function rewardModal(b,gain){return new Promise(res=>{
+  const m=openModal(`<div class="center"><div style="font-size:4rem">${b.badge}</div><h2>『${b.title}』 독서 완료!</h2><p>기념 배지를 획득했어요. 사물함에 자동으로 붙었어요.</p><p class="jua" style="font-size:1.4rem">+${gain} 포인트 💰</p><p class="mut">이제 <b>미술실</b>에서 AI 책 표지를 만들면 +20P! 학급 문집에도 자동으로 실려요.</p><button class="btn">확인</button></div>`,{onClose:res});
+  m.querySelector('button').onclick=()=>closeModal();confetti();})}
+function confetti(){const e=['🎉','✨','⭐','🎊','📚'];for(let i=0;i<26;i++){const s=document.createElement('div');s.textContent=rndPick(e);Object.assign(s.style,{position:'fixed',left:Math.random()*100+'vw',top:'-30px',fontSize:20+Math.random()*20+'px',transition:`transform ${1.6+Math.random()}s ease-in, opacity 2s`,zIndex:99,pointerEvents:'none'});document.body.appendChild(s);requestAnimationFrame(()=>{s.style.transform=`translateY(${innerHeight+60}px) rotate(${Math.random()*540}deg)`;s.style.opacity='.2'});setTimeout(()=>s.remove(),2800)}}
+
+/* --- 협동 게임 (15소년 표류기) --- */
+function coopGame(){return new Promise(res=>{
+  let done=false;
+  const m=openModal(`<h2>🏝️ 무인도 협동 생존 (30초)</h2><p class="mut">세 가지 불씨가 꺼지지 않도록 눌러 주세요. 친구들(AI)도 가장 낮은 곳을 도와줘요.</p>
+   <div id="cg"></div><div class="row" style="margin-top:10px" id="cb"></div><p id="clog" class="mut" style="min-height:2.6em"></p><div class="row"><div style="flex:1"><div class="bar"><i id="tm" style="width:0%;background:#4aa3d8"></i></div><div class="mut">남은 시간</div></div></div>
+   <div class="center" style="margin-top:8px"><button class="btn sun" id="go">시작!</button></div>`,{onClose:()=>{if(!done){done=true;clearInterval(iv);clearInterval(bi);res(false)}}});
+  const res3=[{k:'fire',e:'🔥',n:'불씨 지키기'},{k:'water',e:'💧',n:'물 구하기'},{k:'food',e:'🍖',n:'식량 모으기'}];
+  const val={fire:70,water:70,food:70};
+  m.querySelector('#cg').innerHTML=res3.map(r=>`<div style="margin:8px 0"><b>${r.e} ${r.n}</b><div class="bar" id="bar_${r.k}"><i style="width:70%"></i></div></div>`).join('');
+  const cb=m.querySelector('#cb');res3.forEach(r=>{const b=document.createElement('button');b.className='btn';b.disabled=true;b.textContent=`${r.e} ${r.n}`;b.onclick=()=>{val[r.k]=Math.min(100,val[r.k]+11);draw()};b.dataset.k=r.k;cb.appendChild(b)});
+  const mates=[...NAMES].sort(()=>Math.random()-0.5).slice(0,3);
+  const log=m.querySelector('#clog');
+  let t=0,iv=null,bi=null;
+  function draw(){res3.forEach(r=>{const bar=m.querySelector('#bar_'+r.k);bar.firstElementChild.style.width=val[r.k]+'%';bar.classList.toggle('low',val[r.k]<30)})}
+  function finish(ok){clearInterval(iv);clearInterval(bi);done=true;
+    m.innerHTML=`<button class="x">✕</button><div class="center"><div style="font-size:3.6rem">${ok?'🎉':'😢'}</div><h2>${ok?'모두 함께 살아남았어요!':'불씨가 꺼져 버렸어요…'}</h2><p>${ok?'함께한 친구들 덕분에 무인도의 밤을 무사히 넘겼어요. 이제 내가 주인공이 되어 이야기를 이어가요.':'괜찮아요. 다시 도전해 볼까요?'}</p><button class="btn" id="nx">${ok?'이야기 시작하기':'다시 도전'}</button></div>`;
+    m.querySelector('.x').onclick=()=>closeModal();
+    m.querySelector('#nx').onclick=()=>{ if(ok){S.points+=10;save();toast('협동 보너스 +10P');done=true;modalClose=null;closeModal(true);res(true)}else{done=true;modalClose=null;closeModal(true);res(coopGame())}}}
+  m.querySelector('#go').onclick=function(){this.style.display='none';cb.querySelectorAll('button').forEach(b=>b.disabled=false);
+    iv=setInterval(()=>{t+=0.5;res3.forEach(r=>{val[r.k]-=1+Math.random()*2.2});draw();m.querySelector('#tm').style.width=(t/30*100)+'%';
+      if(res3.some(r=>val[r.k]<=0))finish(false);else if(t>=30)finish(true)},500);
+    bi=setInterval(()=>{const low=res3.reduce((a,r)=>val[r.k]<val[a.k]?r:a,res3[0]);const who=rndPick(mates);val[low.k]=Math.min(100,val[low.k]+7);log.textContent=`${who}: "${low.n} 내가 맡을게!"`;draw()},1300)};
+})}
+
+/* --- 인터랙티브 스토리 --- */
+function playStory(b){return new Promise(res=>{
+  let i=0,finished=false;const tally={c:0,b:0,w:0},picks=[];
+  const m=openModal(`<h2>${b.badge} ${b.title} — 내가 주인공!</h2><div class="bar" style="margin-bottom:10px"><i id="sp" style="width:0%"></i></div><div id="st"></div>`,{onClose:()=>{if(!finished)res(null)}});
+  function show(){
+    if(i>=b.scenes.length){const top=Object.entries(tally).sort((a,c)=>c[1]-a[1])[0][0];
+      const endTxt=b.end[top].replace(/\{name\}/g,S.avatar.displayName||'나');
+      finished=true;
+      m.querySelector('#st').innerHTML=`<div class="center"><div style="font-size:3rem">📖</div><h3>이야기의 끝</h3><p style="line-height:1.7">${endTxt}</p><p>나의 가장 큰 힘: <span class="tag on">${TRAIT[top]}</span></p><button class="btn" id="nx">서평 쓰러 가기</button></div>`;
+      m.querySelector('#sp').style.width='100%';
+      m.querySelector('#nx').onclick=()=>{modalClose=null;closeModal(true);res({picks,top,ending:endTxt})};return}
+    const sc=b.scenes[i];m.querySelector('#sp').style.width=(i/b.scenes.length*100)+'%';
+    m.querySelector('#st').innerHTML=`<p style="font-size:1.1rem;line-height:1.7;background:#fff;border:2px solid var(--line);padding:14px;border-radius:14px">${sc.t.replace(/\{name\}/g,S.avatar.displayName||'나')}</p><div style="display:flex;flex-direction:column;gap:8px" id="ch"></div>`;
+    sc.c.forEach(([txt,k])=>{const bt=document.createElement('button');bt.className='btn alt';bt.style.textAlign='left';bt.textContent=txt;bt.onclick=()=>{tally[k]++;picks.push(txt);i++;show()};m.querySelector('#ch').appendChild(bt)});
+  }
+  show();
+})}
+
+/* --- 서평 --- */
+function writeReview(b){return new Promise(res=>{
+  let stars=5,done=false;const tags=new Set();const prefill=S.books[b.id].review;
+  const m=openModal(`<h2>✏️ 서평 쓰기 — 『${b.title}』</h2>
+   <div class="row" id="stars" style="font-size:1.8rem;cursor:pointer;margin-bottom:6px"></div>
+   <textarea id="rv" placeholder="인상 깊었던 장면, 내 마음에 남은 말, 내가 주인공이었다면…을 자유롭게 써 보세요. (20자 이상)"></textarea>
+   <div class="mut" id="cnt">0자</div>
+   <h3 style="margin:10px 0 4px">해시태그 고르기</h3><div id="tg"></div>
+   <div class="row" style="margin-top:6px"><input type="text" id="ctag" placeholder="나만의 해시태그 (예: #나의여정)" style="flex:1"><button class="btn alt" id="addtag">추가</button></div>
+   <div class="center" style="margin-top:14px"><button class="btn" id="sub" disabled>서평 등록하기</button></div>`,{onClose:()=>{if(!done)res(null)}});
+  const sd=()=>{m.querySelector('#stars').innerHTML=[1,2,3,4,5].map(n=>`<span data-n="${n}">${n<=stars?'⭐':'☆'}</span>`).join('');m.querySelectorAll('#stars span').forEach(s=>s.onclick=()=>{stars=+s.dataset.n;sd()})};sd();
+  const drawTags=()=>{const all=[...new Set([...HASHTAGS,...tags])];m.querySelector('#tg').innerHTML='';all.forEach(t=>{const e=document.createElement('button');e.className='tag btnlike'+(tags.has(t)?' on':'');e.textContent=t;e.onclick=()=>{tags.has(t)?tags.delete(t):tags.add(t);drawTags();chk()};m.querySelector('#tg').appendChild(e)})};drawTags();
+  const rv=m.querySelector('#rv');const chk=()=>{m.querySelector('#cnt').textContent=rv.value.length+'자';m.querySelector('#sub').disabled=!(rv.value.trim().length>=20&&tags.size>=1)};
+  rv.oninput=chk;if(prefill){rv.value=prefill.text;chk()}
+  m.querySelector('#addtag').onclick=()=>{let v=m.querySelector('#ctag').value.trim().replace(/\s+/g,'');if(!v)return;if(!v.startsWith('#'))v='#'+v;tags.add(v.slice(0,14));m.querySelector('#ctag').value='';drawTags();chk()};
+  m.querySelector('#sub').onclick=()=>{done=true;modalClose=null;closeModal(true);res({text:rv.value.trim(),stars,tags:[...tags]})};
+  m.querySelector('#cnt').insertAdjacentHTML('afterend','<div class="mut">해시태그를 1개 이상 골라 주세요.</div>');
+})}
+
+/* --- 디지털 북(내 책) / 학급 문집 --- */
+function bookHtml(id,st,who='나'){const b=BOOKS[id];
+  return `<div class="bookpage"><div class="row">${st.cover?`<img src="${st.cover}" style="width:110px;border-radius:8px;box-shadow:0 3px 8px rgba(0,0,0,.25)">`:`<div style="width:110px;height:146px;border-radius:8px;background:${b.color};color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;padding:6px;font-family:Jua">${b.title}</div>`}
+  <div style="flex:1;min-width:200px"><h3 style="margin:0">${b.badge} ${b.title}</h3><div class="mut">${who} · ${st.date||''} · ${'⭐'.repeat(st.review?.stars||0)}</div>
+  ${st.story?`<p style="margin:8px 0 4px"><b>나의 이야기</b> <span class="tag on">${TRAIT[st.story.top]}</span></p><div class="mut">${st.story.picks.map(p=>'· '+p).join('<br>')}</div><p style="margin:6px 0">${st.story.ending}</p>`:''}
+  <p style="margin:8px 0"><b>서평</b><br>${(st.review?.text||'').replace(/</g,'&lt;')}</p><div>${(st.review?.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div></div></div></div>`}
+function openMyBooks(focus){
+  const done=Object.entries(S.books).filter(([,b])=>b.status==='reviewed');
+  const m=openModal(`<h2>📘 나의 디지털 북</h2><p class="mut">독후 활동·서평·해시태그·AI 표지가 한 권으로 모여요.</p>${done.length?done.map(([id,st])=>bookHtml(id,st,S.avatar.displayName)).join(''):'<p>아직 완료한 책이 없어요. 교실의 학급 문고에서 활동을 시작해 보세요.</p>'}`,{cls:'wide'});
+}
+function openAnthology(){
+  const mine=Object.entries(S.books).filter(([,b])=>b.status==='reviewed').map(([id,st])=>({id,st,who:S.avatar.displayName||'나',mine:true}));
+  const others=FAKE_REVIEWS.map(f=>({id:f.book,st:{review:{text:f.text,stars:f.stars,tags:f.tags},date:'2026.11.0'+(2+f.stars%3)},who:f.name}));
+  const all=[...mine,...others];const tags=[...new Set(all.flatMap(a=>a.st.review.tags))];let flt=null;
+  const m=openModal(`<h2>📖 디지털 학급 문집</h2><p class="mut">우리 반 친구들의 서평과 작품이 한곳에 모여요. 해시태그로 골라 볼 수 있어요.</p><div id="tf"></div><div id="al"></div>`,{cls:'wide'});
+  const draw=()=>{m.querySelector('#tf').innerHTML=`<button class="tag btnlike ${!flt?'on':''}" data-t="">전체</button>`+tags.map(t=>`<button class="tag btnlike ${flt===t?'on':''}" data-t="${t}">${t}</button>`).join('');
+    m.querySelectorAll('#tf button').forEach(b=>b.onclick=()=>{flt=b.dataset.t||null;draw()});
+    const list=all.filter(a=>!flt||a.st.review.tags.includes(flt));
+    m.querySelector('#al').innerHTML=list.map((a,i)=>bookHtml(a.id,a.st,a.who)+`<div style="text-align:right"><button class="tag btnlike" data-l="${a.who}-${a.id}">❤ ${(S.likes[a.who+'-'+a.id]?1:0)+((a.who.length*3+a.id.length)%7)}</button></div>`).join('')||'<p>해당하는 작품이 없어요.</p>';
+    m.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{const k=b.dataset.l;S.likes[k]=!S.likes[k];save();draw()})};
+  draw();
+}
+
+/* --- 사물함 / 상점 --- */
+function openLocker(){
+  const m=openModal(`<h2>🔐 나의 사물함</h2><p class="mut">획득한 배지와 구매한 꾸미기 아이템을 붙이거나 뗄 수 있어요. (테마는 하나만)</p><h3>🏅 배지</h3><div id="bg"></div><h3>🎒 내 아이템</h3><div id="it"></div>`,{cls:'wide',onClose:()=>{if(cur&&cur.name==='classroom')goScene('classroom',[W_LOCK(),0])}});
+  const badges=Object.entries(S.books).filter(([,b])=>b.status==='reviewed').map(([id])=>BOOKS[id]);
+  m.querySelector('#bg').innerHTML=badges.length?badges.map(b=>`<span class="tag on" style="font-size:1.1rem">${b.badge} ${b.title}</span>`).join(''):'<span class="mut">책을 완료하면 배지가 생겨요.</span>';
+  const draw=()=>{const own=S.owned.map(id=>SHOP.find(s=>s.id===id));
+    m.querySelector('#it').innerHTML=own.length?own.map(s=>`<button class="opt ${S.equipped.includes(s.id)?'on':''}" data-id="${s.id}" style="margin:3px;font-size:1rem">${s.emoji} ${s.name}</button>`).join(''):'<span class="mut">상점에서 아이템을 사 보세요!</span>';
+    m.querySelectorAll('#it button').forEach(b=>b.onclick=()=>{const s=SHOP.find(x=>x.id===b.dataset.id);const on=S.equipped.includes(s.id);
+      if(on)S.equipped=S.equipped.filter(x=>x!==s.id);else{if(s.kind==='theme')S.equipped=S.equipped.filter(x=>SHOP.find(y=>y.id===x).kind!=='theme');S.equipped.push(s.id)}save();draw()})};
+  draw();
+}
+const W_LOCK=()=>8;
+function openShop(){
+  const m=openModal(`<h2>🛍️ 구름 상점</h2><p>보유 포인트: <b id="pt">${S.points}</b>P <span class="mut">(서평·표지·협동 보너스로 모아요)</span></p><div class="cards" id="sh"></div>`,{cls:'wide'});
+  const draw=()=>{m.querySelector('#pt').textContent=S.points;const box=m.querySelector('#sh');box.innerHTML='';
+    SHOP.forEach(s=>{const own=S.owned.includes(s.id);const c=document.createElement('div');c.className='card center';
+      c.innerHTML=`<div style="font-size:2.4rem">${s.emoji}</div><h3>${s.name}</h3><div class="mut">${{sticker:'스티커',figure:'피규어',theme:'사물함 테마'}[s.kind]}</div><button class="btn ${own?'alt':'sun'}" ${own||S.points<s.price?'disabled':''}>${own?'보유 중':s.price+'P 구매'}</button>`;
+      c.querySelector('button').onclick=()=>{if(S.points<s.price||own)return;S.points-=s.price;S.owned.push(s.id);S.equipped.push(s.id);if(s.kind==='theme')S.equipped=S.equipped.filter(x=>x===s.id||SHOP.find(y=>y.id===x).kind!=='theme');save();toast(`${s.emoji} ${s.name} 구매! 사물함에 자동으로 붙였어요`);draw()};
+      box.appendChild(c)})};
+  draw();
+}
+
+/* --- 독서 리그 --- */
+function rng(seed){let a=seed>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function leagueData(scope){
+  const n={class:9,grade:24,school:60}[scope];const r=rng({class:11,grade:22,school:33}[scope]);
+  const rows=[];for(let i=0;i<n-1;i++){const nm=NAMES[Math.floor(r()*NAMES.length)];const gr=scope==='class'?'우리 반':scope==='grade'?`${1+Math.floor(r()*5)}반`:`${3+Math.floor(r()*3)}학년 ${1+Math.floor(r()*5)}반`;
+    rows.push({name:nm,where:gr,score:Math.floor(r()*r()*660)})}
+  rows.push({name:S.avatar.displayName||'나',where:'우리 반',score:myScore(),me:true});
+  rows.sort((a,b)=>b.score-a.score);return rows;
+}
+function openLeague(){
+  let scope='class';
+  const m=openModal(`<h2>🏆 독서 리그</h2><p class="mut">점수 = 완독 1권당 60점 + AI 표지 10점. 티어: 🥉브론즈 · 🥈실버(120) · 🥇골드(300) · 💎다이아(600)</p><div class="tabs" id="tb"></div><div id="lg"></div>`,{cls:'wide'});
+  const draw=()=>{m.querySelector('#tb').innerHTML=[['class','우리 반'],['grade','학년'],['school','학교']].map(([k,n])=>`<button class="opt ${scope===k?'on':''}" data-k="${k}">${n}</button>`).join('');
+    m.querySelectorAll('#tb button').forEach(b=>b.onclick=()=>{scope=b.dataset.k;draw()});
+    const rows=leagueData(scope);const myRank=rows.findIndex(r=>r.me)+1;
+    const nextT=TIERS.find(t=>t.min>myScore());
+    m.querySelector('#lg').innerHTML=`<p>내 순위 <b>${myRank}위</b> / ${rows.length}명 · ${tierOf(myScore()).e} ${tierOf(myScore()).n} ${nextT?`· 다음 티어 ${nextT.e} 까지 ${nextT.min-myScore()}점`:'· 최고 티어!'}</p>
+     <table><tr><th>#</th><th>이름</th><th>소속</th><th>티어</th><th>점수</th></tr>${rows.slice(0,10).map((r,i)=>`<tr class="${r.me?'me':''}"><td>${i+1}</td><td>${r.name}</td><td>${r.where}</td><td>${tierOf(r.score).e}</td><td>${r.score}</td></tr>`).join('')}${myRank>10?`<tr class="me"><td>${myRank}</td><td>${S.avatar.displayName||'나'}</td><td>우리 반</td><td>${tierOf(myScore()).e}</td><td>${myScore()}</td></tr>`:''}</table><p class="mut">※ 친구들 순위는 데모용 가상 데이터예요. 서버를 연결하면 실제 학급·학교 랭킹으로 바뀌어요.</p>`};
+  draw();
+}
+
+/* ============================================================
+   AI 표지 스튜디오 (브라우저 안에서 그리는 생성형 일러스트 대역)
+   ============================================================ */
+function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+function drawCover(cv,{title,author,prompt,style}){
+  const W=600,H=800;cv.width=W;cv.height=H;const out=cv.getContext('2d');
+  const px=style==='pixel';const sc=px?0.2:1;
+  const a=document.createElement('canvas');a.width=Math.round(W*sc);a.height=Math.round(H*sc);const c=a.getContext('2d');c.scale(sc,sc);
+  const r=rng(hash(prompt+style));
+  const has=re=>re.test(prompt);
+  const night=has(/밤|달|별|우주|은하|새벽/)||style==='night';
+  const sea=has(/바다|섬|파도|항해|표류|배/),forest=has(/숲|나무|오렌지|정원|잎/),flower=has(/꽃|장미|봄/),fire=has(/불|모닥|봉화|횃불/),rain=has(/비|눈물|슬픔/),heart=has(/마음|사랑|우정|배려/),bird=has(/새|날개|알|하늘/),planet=has(/행성|왕자|우주|별/);
+  let pal=night?['#10123a','#2d2f7a','#ffeaa0']:sea?['#bff0ff','#4aa3d8','#fff3b0']:forest?['#e3f7c9','#8fd18a','#ffd166']:flower?['#ffe4ef','#ff9fb8','#fff3b0']:['#ffeedd','#ffb4a2','#fff3b0'];
+  if(style==='water'){c.filter='blur(0.5px)'}
+  const g=c.createLinearGradient(0,0,0,800);g.addColorStop(0,pal[0]);g.addColorStop(1,pal[1]);c.fillStyle=g;c.fillRect(0,0,600,800);
+  const out_=style==='fairy'?'#3b3226':null;
+  const shape=(fn,fill)=>{c.beginPath();fn();c.fillStyle=fill;c.fill();if(out_){c.lineWidth=5;c.strokeStyle=out_;c.stroke()}};
+  // 별/구름
+  if(night){for(let i=0;i<70;i++){c.fillStyle=`rgba(255,255,220,${0.4+r()*0.6})`;const s=1+r()*3;c.fillRect(r()*600,r()*480,s,s)}}
+  else{for(let i=0;i<4;i++){const x=r()*500+50,y=100+r()*220;c.fillStyle='rgba(255,255,255,.9)';[[0,0,50],[45,10,38],[-45,12,34]].forEach(([dx,dy,rr])=>shape(()=>c.arc(x+dx,y+dy,rr,0,7),'rgba(255,255,255,.92)'))}}
+  // 해/달
+  shape(()=>c.arc(430,230,night?60:70,0,7),night?'#fff4c4':pal[2]);
+  if(night)shape(()=>c.arc(455,215,52,0,7),pal[0]);
+  if(planet){shape(()=>c.arc(150,330,55,0,7),'#ff9fb8');c.save();c.translate(150,330);c.rotate(-0.4);c.strokeStyle='#ffe29a';c.lineWidth=8;c.beginPath();c.ellipse(0,0,95,18,0,0,7);c.stroke();c.restore()}
+  if(bird){for(let i=0;i<3;i++){const x=120+i*110,y=160+r()*80;c.strokeStyle=night?'#fff':'#3b3226';c.lineWidth=5;c.beginPath();c.moveTo(x-30,y);c.quadraticCurveTo(x-15,y-25,x,y);c.quadraticCurveTo(x+15,y-25,x+30,y);c.stroke()}}
+  // 지형
+  const groundCol=sea?'#4aa3d8':forest?'#5fb36a':'#b7e08c';
+  shape(()=>{c.moveTo(0,560);c.quadraticCurveTo(150,500,300,560);c.quadraticCurveTo(450,610,600,540);c.lineTo(600,800);c.lineTo(0,800);c.closePath()},night?shade(groundCol,-70):groundCol);
+  if(sea){for(let k=0;k<5;k++){c.strokeStyle='rgba(255,255,255,.75)';c.lineWidth=5;c.beginPath();for(let x=0;x<=600;x+=10)c.lineTo(x,600+k*38+Math.sin(x/38+k+r())*8);c.stroke()}
+    shape(()=>c.ellipse(300,585,130,35,0,0,7),'#f3e2b3');cyl2(c,300,585);}
+  if(forest||!sea){const n=forest?7:3;for(let i=0;i<n;i++){const x=40+r()*520,y=540+r()*40,s=0.8+r()*0.8;shape(()=>c.rect(x-8*s,y-70*s,16*s,80*s),'#8b5e3c');shape(()=>c.arc(x,y-100*s,55*s,0,7),night?'#2f6b4f':'#5fb36a');if(has(/오렌지|라임/))shape(()=>c.arc(x+20*s,y-90*s,10*s,0,7),'#ff9f1c')}}
+  if(flower){for(let i=0;i<14;i++){const x=r()*600,y=640+r()*140;shape(()=>c.arc(x,y,12,0,7),rndPickR(['#ff8fab','#ffd166','#fff','#c9a7ff'],r))}}
+  if(fire){const x=300,y=700;shape(()=>{c.moveTo(x-45,y+20);c.quadraticCurveTo(x-60,y-50,x,y-110);c.quadraticCurveTo(x+60,y-50,x+45,y+20);c.closePath()},'#ff7b3a');shape(()=>{c.moveTo(x-22,y+20);c.quadraticCurveTo(x-30,y-20,x,y-60);c.quadraticCurveTo(x+30,y-20,x+22,y+20);c.closePath()},'#ffd166')}
+  if(heart){for(let i=0;i<6;i++){const x=80+r()*440,y=330+r()*180,s=14+r()*14;shape(()=>{c.moveTo(x,y+s*0.5);c.bezierCurveTo(x-s*2,y-s,x-s*0.5,y-s*1.8,x,y-s*0.6);c.bezierCurveTo(x+s*0.5,y-s*1.8,x+s*2,y-s,x,y+s*0.5)},'#ff6b8b')}}
+  if(rain){c.strokeStyle='rgba(120,170,230,.7)';c.lineWidth=3;for(let i=0;i<60;i++){const x=r()*600,y=r()*600;c.beginPath();c.moveTo(x,y);c.lineTo(x-8,y+24);c.stroke()}}
+  if(style==='water'){c.filter='none';for(let i=0;i<24;i++){c.fillStyle=`hsla(${r()*360},70%,75%,.12)`;c.beginPath();c.arc(r()*600,r()*800,40+r()*90,0,7);c.fill()}}
+  // 합성
+  out.imageSmoothingEnabled=!px;out.drawImage(a,0,0,W,H);
+  // 필름 질감
+  if(style==='water'||style==='fairy'){out.globalAlpha=.06;for(let i=0;i<900;i++){out.fillStyle=r()>.5?'#000':'#fff';out.fillRect(r()*W,r()*H,2,2)}out.globalAlpha=1}
+  // 타이틀
+  out.fillStyle='rgba(255,250,240,.92)';out.beginPath();out.roundRect(40,40,520,150,22);out.fill();out.lineWidth=4;out.strokeStyle='#3b3226';out.stroke();
+  out.fillStyle='#3b3226';out.textAlign='center';out.textBaseline='middle';
+  let fs=56;out.font=`${fs}px Jua, 'Gowun Dodum', sans-serif`;while(out.measureText(title).width>470&&fs>26){fs-=2;out.font=`${fs}px Jua, 'Gowun Dodum', sans-serif`}
+  out.fillText(title,300,100);out.font="26px 'Gowun Dodum', sans-serif";out.fillText(author,300,158);
+  out.fillStyle='rgba(59,50,38,.78)';out.beginPath();out.roundRect(120,730,360,44,22);out.fill();out.fillStyle='#fff';out.font="22px 'Gowun Dodum', sans-serif";
+  out.fillText(`표지 · ${S.avatar.displayName||'나'}`,300,753);
+}
+function cyl2(c,x,y){c.fillStyle='#8b5e3c';c.fillRect(x-6,y-90,12,90);c.fillStyle='#5fb36a';for(let i=0;i<5;i++){c.beginPath();c.ellipse(x+Math.cos(i*1.26)*38,y-90+Math.sin(i*1.26)*14,40,10,i*1.26,0,7);c.fill()}}
+function rndPickR(a,r){return a[Math.floor(r()*a.length)]}
+function shade(hex,amt){return shadeC(hex,amt)}
+const STYLES={water:'🎨 수채화',fairy:'🧚 동화풍',pixel:'👾 픽셀',night:'🌙 밤하늘'};
+function suggestPrompts(b,st){
+  const top=st.story?TRAIT[st.story.top]:'용기';const mood={용기:'힘차게 타오르는',배려:'따뜻하고 포근한',지혜:'고요하고 깊은'}[top];
+  return [`${b.motif}, ${mood} 분위기`,`${top}를 상징하는 별과 달이 뜬 밤, 반짝이는 바다`,`내가 주인공인 장면: ${st.story?.picks?.[0]||'첫 번째 선택'}을 떠올리는 숲 속 꽃밭`,`마음이 담긴 하트와 새가 날아오르는 새벽 하늘`];
+}
+function openCoverStudio(){
+  const done=Object.entries(S.books).filter(([,b])=>b.status==='reviewed');
+  if(!done.length){say('미술 선생님','먼저 책을 읽고 서평까지 마쳐야 표지를 만들 수 있어요! 학급 문고에서 활동을 시작해 보세요.');return}
+  let sel=done[0][0],style='water';
+  const m=openModal(`<h2>✨ AI 책 표지 공방</h2><div class="row" id="bsel"></div><div class="row" style="align-items:flex-start;margin-top:10px">
+   <div style="flex:1;min-width:230px"><h3 style="margin:4px 0">프롬프트 추천</h3><div id="rec"></div><h3 style="margin:10px 0 4px">내 프롬프트</h3><textarea id="pr" style="min-height:90px"></textarea>
+    <h3 style="margin:10px 0 4px">스타일</h3><div id="sty"></div><div style="margin-top:12px"><button class="btn" id="mk">🎨 표지 만들기</button> <button class="btn sun" id="sv" disabled>이 표지로 저장</button></div><p class="mut" id="hn"></p></div>
+   <div style="width:240px"><canvas id="cv" style="width:240px;border-radius:10px;box-shadow:0 4px 10px rgba(0,0,0,.3);background:#fff;aspect-ratio:3/4"></canvas></div></div>`,{cls:'wide'});
+  const cv=m.querySelector('#cv');cv.width=600;cv.height=800;
+  const pick=()=>{const b=BOOKS[sel],st=S.books[sel];m.querySelector('#bsel').innerHTML=done.map(([id])=>`<button class="opt ${id===sel?'on':''}" data-i="${id}">${BOOKS[id].badge} ${BOOKS[id].title}</button>`).join('');
+    m.querySelectorAll('#bsel button').forEach(x=>x.onclick=()=>{sel=x.dataset.i;pick();generated=false;m.querySelector('#sv').disabled=true});
+    m.querySelector('#rec').innerHTML=suggestPrompts(b,st).map((p,i)=>`<button class="tag btnlike" data-p="${i}" style="text-align:left;display:block;margin:3px 0">💡 ${p}</button>`).join('');
+    m.querySelectorAll('#rec button').forEach(x=>x.onclick=()=>{m.querySelector('#pr').value=suggestPrompts(b,st)[+x.dataset.p]});
+    if(!m.querySelector('#pr').value)m.querySelector('#pr').value=suggestPrompts(b,st)[0];
+    m.querySelector('#hn').textContent=st.cover?'이미 표지가 있어요. 새로 만들면 바꿔져요. (포인트는 첫 저장에만)':'첫 표지를 저장하면 +20P!'};
+  let generated=false;
+  m.querySelector('#sty').innerHTML=Object.entries(STYLES).map(([k,n])=>`<button class="opt ${k===style?'on':''}" data-s="${k}">${n}</button>`).join(' ');
+  m.querySelectorAll('#sty button').forEach(x=>x.onclick=()=>{style=x.dataset.s;m.querySelectorAll('#sty button').forEach(y=>y.classList.toggle('on',y===x))});
+  pick();
+  m.querySelector('#mk').onclick=()=>{const b=BOOKS[sel];const p=m.querySelector('#pr').value.trim();if(!p){toast('프롬프트를 적어 주세요');return}
+    const btn=m.querySelector('#mk');btn.disabled=true;btn.textContent='그리는 중… ✨';
+    setTimeout(()=>{drawCover(cv,{title:b.title,author:b.author,prompt:p,style});generated=true;btn.disabled=false;btn.textContent='🎨 다시 만들기';m.querySelector('#sv').disabled=false},700)};
+  m.querySelector('#sv').onclick=()=>{if(!generated)return;const st=S.books[sel];const first=!st.cover;st.cover=cv.toDataURL('image/jpeg',0.82);if(first)S.points+=20;save();toast(first?'표지 저장! +20P · 미술실 갤러리에 걸렸어요 🖼️':'표지를 바꿨어요!');closeModal();if(cur.name==='art')goScene('art',[-4,2])};
+}
+
+/* ============================================================
+   피아노
+   ============================================================ */
+let actx=null;const FREQ=[261.63,293.66,329.63,349.23,392,440,493.88,523.25],PK=['a','s','d','f','g','h','j','k'];
+function tone(f){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();const o=actx.createOscillator(),g=actx.createGain();o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(0.0001,actx.currentTime);g.gain.exponentialRampToValueAtTime(0.4,actx.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,actx.currentTime+1.1);o.connect(g).connect(actx.destination);o.start();o.stop(actx.currentTime+1.2)}catch(e){}}
+let pianoUI=false;
+function openPiano(){
+  const m=openModal(`<h2>🎹 음악실 피아노</h2><p class="mut">건반을 누르거나 키보드 A S D F G H J K (또는 1~8)를 눌러 연주해요.</p><div class="center" id="pk"></div><p class="mut center">책 속 장면의 분위기를 소리로 표현해 보세요 🎶</p>`,{onClose:()=>{pianoUI=false}});pianoUI=true;
+  m.querySelector('#pk').innerHTML=FREQ.map((f,i)=>`<div class="key" data-i="${i}"><span>${['도','레','미','파','솔','라','시','도'][i]}<br>${PK[i].toUpperCase()}</span></div>`).join('');
+  m.querySelectorAll('.key').forEach(k=>k.addEventListener('pointerdown',()=>{k.classList.add('down');tone(FREQ[+k.dataset.i]);setTimeout(()=>k.classList.remove('down'),160)}));
+}
+function pianoKey(k,down){if(!pianoUI||!down)return;let i=PK.indexOf(k);if(i<0&&/^[1-8]$/.test(k))i=+k-1;if(i<0)return;tone(FREQ[i]);const el=document.querySelectorAll('.key')[i];if(el){el.classList.add('down');setTimeout(()=>el.classList.remove('down'),160)}}
+
+/* ============================================================
+   타이틀 · 캐릭터 만들기
+   ============================================================ */
+const screen=$('#screen');
+function showTitle(){
+  const has=!!loadSave();
+  screen.innerHTML=`<div class="title-screen"><div style="font-size:4rem">📚🏫🌳</div><h1>북빌리지 스쿨</h1><p>동물의 숲 같은 아기자기한 학교에서 고전·인문학 책을 읽고, 친구들과 모험하고, 나만의 책 표지를 만드는 독서 메타버스예요.</p>
+   <div class="row" style="justify-content:center">${has?'<button class="btn" id="cont">이어하기</button>':''}<button class="btn ${has?'alt':''}" id="newg">${has?'새로 시작':'시작하기'}</button></div><p class="mut" style="font-size:.8rem">진행 상황은 이 브라우저에 자동 저장돼요.</p></div>`;
+  const c=$('#cont');if(c)c.onclick=async()=>{S=loadSave();S.avatar={...DEFAULT_AVATAR,...S.avatar};startGame()};
+  $('#newg').onclick=()=>{if(has&&!confirm('저장된 진행 상황이 지워져요. 새로 시작할까요?'))return;S=newSave();showCreator()};
+}
+async function showCreator(){
+  rebuildPlayer();await goScene('creator');
+  const A=S.avatar;
+  const sw=(key,arr)=>`<div class="row">${arr.map(c=>`<button class="swatch ${A[key]===c?'on':''}" data-k="${key}" data-v="${c}" style="background:${c}"></button>`).join('')}</div>`;
+  const op=(key,arr)=>`<div class="row">${arr.map(v=>`<button class="opt ${A[key]===v?'on':''}" data-k="${key}" data-v="${v}">${L[v]}</button>`).join('')}</div>`;
+  screen.innerHTML=`<div class="creator"><h2 style="margin:0 0 6px">내 캐릭터 만들기</h2>
+   <input type="text" id="nm" maxlength="8" placeholder="이름 (최대 8자)" value="${A.displayName}">
+   <h3>피부색</h3>${sw('skin',SKINS)}<h3>머리 색</h3>${sw('hair',HAIRS)}<h3>머리 모양</h3>${op('hairStyle',HAIR_STYLES)}
+   <h3>옷 색</h3>${sw('top',CLOTHES)}<h3>옷 종류</h3>${op('topStyle',TOP_STYLES)}<h3>바지/치마 색</h3>${sw('bottom',CLOTHES)}${op('bottomStyle',BOTTOM_STYLES)}
+   <h3>표정</h3>${op('face',FACES)}<h3>눈</h3>${op('eyes',EYES)}<h3>액세서리</h3>${op('accessory',ACCS)}
+   <div class="row" style="margin-top:16px"><button class="btn alt" id="rnd">🎲 랜덤</button><button class="btn" id="ok">이 모습으로 시작!</button></div></div>`;
+  const rebind=()=>{screen.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{A[b.dataset.k]=b.dataset.v;rebuildPlayer();showCreatorKeep()})};
+  function showCreatorKeep(){const sc=screen.querySelector('.creator').scrollTop;const nmv=$('#nm').value;A.displayName=nmv;showCreatorHtmlOnly(sc)}
+  function showCreatorHtmlOnly(sc){showCreatorRender();screen.querySelector('.creator').scrollTop=sc}
+  function showCreatorRender(){
+    const nm=A.displayName;
+    screen.querySelector('.creator').outerHTML=`<div class="creator"><h2 style="margin:0 0 6px">내 캐릭터 만들기</h2>
+   <input type="text" id="nm" maxlength="8" placeholder="이름 (최대 8자)" value="${nm}">
+   <h3>피부색</h3>${sw('skin',SKINS)}<h3>머리 색</h3>${sw('hair',HAIRS)}<h3>머리 모양</h3>${op('hairStyle',HAIR_STYLES)}
+   <h3>옷 색</h3>${sw('top',CLOTHES)}<h3>옷 종류</h3>${op('topStyle',TOP_STYLES)}<h3>바지/치마 색</h3>${sw('bottom',CLOTHES)}${op('bottomStyle',BOTTOM_STYLES)}
+   <h3>표정</h3>${op('face',FACES)}<h3>눈</h3>${op('eyes',EYES)}<h3>액세서리</h3>${op('accessory',ACCS)}
+   <div class="row" style="margin-top:16px"><button class="btn alt" id="rnd">🎲 랜덤</button><button class="btn" id="ok">이 모습으로 시작!</button></div></div>`;
+    rebind();wire();
+  }
+  function wire(){
+    $('#nm').oninput=e=>{A.displayName=e.target.value;player.label.material.map.dispose&&0;rebuildPlayer()};
+    $('#rnd').onclick=()=>{Object.assign(A,randomAvatar($('#nm').value));showCreatorKeep()};
+    $('#ok').onclick=()=>{A.displayName=($('#nm').value||'').trim()||'새싹';save();screen.innerHTML='';startGame()};
+  }
+  rebind();wire();
+}
+async function startGame(){
+  screen.innerHTML='';S.avatar.displayName=S.avatar.displayName||'새싹';rebuildPlayer();
+  $('#hud').style.display='';$('#topbtns').style.display='flex';$('#helpbar').style.display='';
+  await goScene('campus');
+}
+$('#b-books').onclick=()=>{if(uiLock===0)openMyBooks()};
+$('#b-league').onclick=()=>{if(uiLock===0)openLeague()};
+$('#b-avatar').onclick=()=>{if(uiLock>0||!cur||cur.creator)return;const keep=cur.name,pos=player.group.position.clone();
+  S.avatar.displayName=S.avatar.displayName;goScene('creator').then(()=>{$('#hud').style.display='none';$('#topbtns').style.display='none';$('#helpbar').style.display='none';buildCreatorReturn(keep,pos)})};
+function buildCreatorReturn(keep,pos){
+  showCreatorFromGame(keep);
+}
+async function showCreatorFromGame(keep){
+  // 같은 UI 재사용: 시작 버튼 라벨/동작만 다름
+  await showCreatorUI();
+  $('#ok').textContent='저장하고 돌아가기';
+  $('#ok').onclick=async()=>{S.avatar.displayName=($('#nm').value||'').trim()||'새싹';save();screen.innerHTML='';rebuildPlayer();$('#hud').style.display='';$('#topbtns').style.display='flex';$('#helpbar').style.display='';await goScene(keep==='creator'?'campus':keep)};
+}
+async function showCreatorUI(){ // 현재 씬이 creator 인 상태에서 패널만 다시 그림
+  const A=S.avatar;
+  const sw=(key,arr)=>`<div class="row">${arr.map(c=>`<button class="swatch ${A[key]===c?'on':''}" data-k="${key}" data-v="${c}" style="background:${c}"></button>`).join('')}</div>`;
+  const op=(key,arr)=>`<div class="row">${arr.map(v=>`<button class="opt ${A[key]===v?'on':''}" data-k="${key}" data-v="${v}">${L[v]}</button>`).join('')}</div>`;
+  const render=(scroll=0)=>{
+    screen.innerHTML=`<div class="creator"><h2 style="margin:0 0 6px">내 캐릭터 꾸미기</h2>
+   <input type="text" id="nm" maxlength="8" placeholder="이름 (최대 8자)" value="${A.displayName}">
+   <h3>피부색</h3>${sw('skin',SKINS)}<h3>머리 색</h3>${sw('hair',HAIRS)}<h3>머리 모양</h3>${op('hairStyle',HAIR_STYLES)}
+   <h3>옷 색</h3>${sw('top',CLOTHES)}<h3>옷 종류</h3>${op('topStyle',TOP_STYLES)}<h3>바지/치마 색</h3>${sw('bottom',CLOTHES)}${op('bottomStyle',BOTTOM_STYLES)}
+   <h3>표정</h3>${op('face',FACES)}<h3>눈</h3>${op('eyes',EYES)}<h3>액세서리</h3>${op('accessory',ACCS)}
+   <div class="row" style="margin-top:16px"><button class="btn alt" id="rnd">🎲 랜덤</button><button class="btn" id="ok">저장</button></div></div>`;
+    screen.querySelector('.creator').scrollTop=scroll;
+    screen.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{const sc=screen.querySelector('.creator').scrollTop;A.displayName=$('#nm').value;A[b.dataset.k]=b.dataset.v;rebuildPlayer();render(sc)});
+    $('#nm').oninput=e=>{A.displayName=e.target.value;rebuildPlayer()};
+    $('#rnd').onclick=()=>{Object.assign(A,randomAvatar($('#nm').value));rebuildPlayer();render(0)};
+  };
+  render();
+}
+
+/* ===== 시작 ===== */
+showTitle();
+loop();
+// 디버그/테스트용 훅
+window.__game={get S(){return S},get cur(){return cur},player,goScene,save,say,openModal,SCENES};
+</script>
+</body>
+</html>
