@@ -73,6 +73,19 @@ tr.me{background:#fff3c4;font-weight:bold}
 .key{display:inline-block;width:46px;height:150px;background:#fff;border:2px solid var(--ink);border-radius:0 0 10px 10px;margin:0 2px;cursor:pointer;vertical-align:top;position:relative;font-size:.8rem}
 .key span{position:absolute;bottom:6px;left:0;right:0;text-align:center}
 .key.down{background:var(--sun)}
+.song-wrap{overflow-x:auto;background:#fff;border:2px solid var(--line);border-radius:14px;padding:8px}
+.song{display:grid;gap:2px;width:max-content}
+.cell{width:20px;height:20px;border-radius:5px;background:#f3ecdc;cursor:pointer;border:0;padding:0}
+.cell.bar{margin-left:6px}
+.cell.on{background:var(--c)}
+.cell.drum{border-radius:50%}
+.cell.drum.on{background:#3b3226}
+.cell.now{outline:2px solid #3b3226}
+.cell.cur{box-shadow:inset 0 0 0 2px #e2574c}
+.rowlab{font-size:.75rem;width:34px;text-align:right;padding-right:4px;line-height:20px;white-space:nowrap}
+.mini{display:grid;gap:1px;width:max-content;background:#fff;border-radius:6px;padding:4px}
+.mini i{width:6px;height:6px;border-radius:2px;background:#f3ecdc;display:block}
+.key.sm{width:40px;height:96px}
 .bookpage{background:#fff;border:2px solid var(--line);border-radius:14px;padding:14px;margin-top:8px}
 .creator{position:fixed;left:12px;top:12px;bottom:12px;width:min(380px,92vw);overflow:auto;background:rgba(255,250,240,.96);border:3px solid var(--ink);border-radius:24px;padding:18px}
 .creator h3{margin:14px 0 6px;font-size:1rem}
@@ -93,6 +106,7 @@ tr.me{background:#fff3c4;font-weight:bold}
     <button class="btn alt" id="b-books">📘 내 책</button>
     <button class="btn alt" id="b-league">🏆 리그</button>
     <button class="btn alt" id="b-avatar">👕 꾸미기</button>
+    <button class="btn alt" id="b-bubble">💬 말풍선</button>
   </div>
   <div class="help" id="helpbar" style="display:none">WASD·방향키 이동 / 바닥 클릭 이동 / E·스페이스 상호작용 / 휠 확대·축소</div>
   <button class="btn sun" id="prompt"></button>
@@ -124,7 +138,7 @@ const L={short:"짧은 머리",long:"긴 머리",curly:"곱슬 머리",cap:"챙 
  tee:"티셔츠",hoodie:"후드티",uniform:"교복",stripe:"줄무늬",overall:"멜빵옷",pants:"긴바지",shorts:"반바지",skirt:"치마",
  smile:"웃는 얼굴",wow:"놀란 얼굴",calm:"차분한 얼굴",wink:"윙크",cheerful:"활짝 웃음",round:"동그란 눈",happy:"웃는 눈",sparkle:"반짝 눈",
  none:"없음",glasses:"안경",sunglasses:"선글라스",headband:"머리띠",bow:"리본",beanie:"비니"};
-const DEFAULT_AVATAR={displayName:"",skin:SKINS[1],hair:HAIRS[0],hairStyle:"short",top:CLOTHES[3],topStyle:"tee",bottom:"#3a4a5a",bottomStyle:"pants",face:"smile",eyes:"round",accessory:"none"};
+const DEFAULT_AVATAR={displayName:"",skin:SKINS[1],hair:HAIRS[0],hairStyle:"short",top:CLOTHES[3],topStyle:"tee",bottom:"#3a4a5a",bottomStyle:"pants",face:"smile",eyes:"round",accessory:"none",hat:"none",back:"none",hand:"none"};
 
 const BOOKS={
  boys15:{id:'boys15',title:'15소년 표류기',author:'쥘 베른',color:'#4aa3d8',badge:'🏝️',level:'★★☆',
@@ -167,9 +181,23 @@ const BOOKS={
   end:{c:'{name}(은)는 알을 깨는 용기로 자신의 길을 선택했어요.',b:'{name}(은)는 다른 사람과 이어지며 나를 찾아갔어요.',w:'{name}(은)는 마음속 질문을 놓지 않는 사람이 되었어요.'}}
 };
 const TRAIT={c:'용기',b:'배려',w:'지혜'};
+// 책을 이모지로 표현하기
+const EMOJI_PALETTE=['😊','😢','😮','😱','🥰','🤔','😤','😴','🔥','🌊','🏝️','⛵','🌹','🦊','🐑','⭐','🍊','🌳','💔','🎁','🥚','🐦','🌅','🗝️','🤝','💪','🌙','✉️'];
+const BOOK_EMOJI={boys15:['🏝️','🔥','🤝'],lime:['🍊','🌳','😢'],prince:['🌹','🦊','⭐'],demian:['🥚','🐦','🌅']};
 const HASHTAGS=['#용기','#우정','#성장','#모험','#가족','#슬픔','#희망','#상상력','#배려','#질문이남는책','#또읽고싶어','#눈물주의'];
 
 const SHOP=[
+ // 캐릭터 꾸미기: slot마다 하나씩 착용 (hat 머리 / back 등 / hand 손)
+ {id:'w_flower',kind:'wear',slot:'hat',emoji:'🌸',name:'꽃 화관',price:40},
+ {id:'w_bunny',kind:'wear',slot:'hat',emoji:'🐰',name:'토끼 귀 머리띠',price:50},
+ {id:'w_wizard',kind:'wear',slot:'hat',emoji:'🧙',name:'마법사 모자',price:70},
+ {id:'w_crown',kind:'wear',slot:'hat',emoji:'👑',name:'금빛 왕관',price:90},
+ {id:'w_bag',kind:'wear',slot:'back',emoji:'🎒',name:'책가방',price:30},
+ {id:'w_cape',kind:'wear',slot:'back',emoji:'🦸',name:'영웅 망토',price:60},
+ {id:'w_wings',kind:'wear',slot:'back',emoji:'🪽',name:'천사 날개',price:100},
+ {id:'w_book',kind:'wear',slot:'hand',emoji:'📖',name:'빛나는 마법책',price:50},
+ {id:'w_balloon',kind:'wear',slot:'hand',emoji:'🎈',name:'풍선',price:30},
+ // 사물함 꾸미기
  {id:'st_star',kind:'sticker',emoji:'⭐',name:'반짝 별 스티커',price:20},
  {id:'st_rain',kind:'sticker',emoji:'🌈',name:'무지개 스티커',price:30},
  {id:'st_clover',kind:'sticker',emoji:'🍀',name:'네잎클로버',price:30},
@@ -186,10 +214,10 @@ const TIERS=[{n:'브론즈',e:'🥉',min:0},{n:'실버',e:'🥈',min:120},{n:'�
 const tierOf=s=>[...TIERS].reverse().find(t=>s>=t.min);
 const NAMES=['하늘','지우','서연','민준','도윤','하윤','예준','서준','수아','지안','이안','채원','유나','시우','은우','다은','로운','나온','태오','소율','다온','이서','가온','주원'];
 const FAKE_REVIEWS=[
- {name:'서연',book:'lime',stars:5,text:'제제가 밍기뉴에게 말하는 장면에서 울컥했다. 나도 속마음을 털어놓을 나무가 있었으면 좋겠다.',tags:['#슬픔','#우정']},
- {name:'민준',book:'boys15',stars:5,text:'협동 게임에서 불이 꺼질 뻔했는데 친구들이 도와줘서 살았다! 무인도에서도 함께하면 이겨낼 수 있다.',tags:['#모험','#용기']},
- {name:'지우',book:'prince',stars:4,text:'길들인다는 건 시간을 쓰는 거라는 말이 오래 기억에 남는다.',tags:['#질문이남는책']},
- {name:'도윤',book:'demian',stars:4,text:'어렵지만 알을 깨고 나온다는 말이 멋졌다. 다음에 한 번 더 읽고 싶다.',tags:['#성장','#또읽고싶어']}
+ {name:'서연',book:'lime',stars:5,emoji:['🍊','😢','🌳'],song:{bars:2,tempo:90,n:['0,4','1,2','2,1','3,0','4,2','5,4','6,5','7,4'],d:['0,0','4,0']},text:'제제가 밍기뉴에게 말하는 장면에서 울컥했다. 나도 속마음을 털어놓을 나무가 있었으면 좋겠다.',tags:['#슬픔','#우정']},
+ {name:'민준',book:'boys15',stars:5,emoji:['🏝️','🔥','💪'],text:'협동 게임에서 불이 꺼질 뻔했는데 친구들이 도와줘서 살았다! 무인도에서도 함께하면 이겨낼 수 있다.',tags:['#모험','#용기']},
+ {name:'지우',book:'prince',stars:4,emoji:['🌹','🦊','🤔'],text:'길들인다는 건 시간을 쓰는 거라는 말이 오래 기억에 남는다.',tags:['#질문이남는책']},
+ {name:'도윤',book:'demian',stars:4,emoji:['🥚','🐦','💪'],text:'어렵지만 알을 깨고 나온다는 말이 멋졌다. 다음에 한 번 더 읽고 싶다.',tags:['#성장','#또읽고싶어']}
 ];
 
 /* ============================================================
@@ -236,6 +264,16 @@ function labelSprite(text,{bg='rgba(255,250,240,.95)',fg='#3b3226',size=34,w=Mat
   const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;
   const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false}));
   s.scale.set(w/64*0.55,0.55,1);return s;
+}
+// 머리 위 말풍선: 큰 이모지 + 작은 책 제목
+function bubbleSprite(emojis,title){
+  const w=300,h=170,c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');
+  x.fillStyle='#fff';x.strokeStyle='#3b3226';x.lineWidth=5;x.beginPath();x.roundRect(4,4,w-8,120,36);x.fill();x.stroke();
+  x.beginPath();x.moveTo(w/2-18,122);x.lineTo(w/2,158);x.lineTo(w/2+18,122);x.closePath();x.fill();x.stroke();x.fillRect(w/2-15,116,30,8);
+  x.textAlign='center';x.textBaseline='middle';x.font='58px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';x.fillText(emojis.join(''),w/2,56);
+  x.fillStyle='#3b3226';x.font="22px Jua, 'Gowun Dodum', sans-serif";x.fillText(title,w/2,104);
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false}));s.scale.set(2.5,2.5*h/w,1);s.center.set(0.5,0);return s;
 }
 function emojiSprite(e,size=1){
   const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');
@@ -314,6 +352,19 @@ function buildAvatar(cfg){
   if(ac==='bow'){const b=new THREE.Group();b.position.set(0.28,0.4,0.18);head.add(b);
     [-1,1].forEach(s=>{const c=mesh(new THREE.ConeGeometry(0.1,0.18,8),'#d15a9a',s*0.1,0,0,b);c.rotation.z=s*-Math.PI/2});sph(b,0.05,'#b03f7e',0,0,0)}
   if(ac==='beanie'){const m=mesh(new THREE.SphereGeometry(0.5,22,14,0,Math.PI*2,0,Math.PI*0.5),'#f2a33c',0,0.02,0,head);m.rotation.x=-0.2;sph(head,0.09,'#fff',0,0.55,-0.1)}
+  // 상점 아이템 (머리·등·손)
+  const hat=cfg.hat;
+  if(hat==='w_crown'){cyl(head,0.3,0.32,0.16,'#f6c945',0,0.47,0,18);for(let i=0;i<5;i++){const a=i/5*Math.PI*2;mesh(new THREE.ConeGeometry(0.06,0.16,6),'#f6c945',Math.sin(a)*0.27,0.62,Math.cos(a)*0.27,head);sph(head,0.035,['#e2574c','#4aa3d8','#7ac17a'][i%3],Math.sin(a)*0.31,0.48,Math.cos(a)*0.31)}}
+  if(hat==='w_wizard'){cyl(head,0.62,0.62,0.04,'#5b3fa8',0,0.3,0,24);const c=mesh(new THREE.ConeGeometry(0.36,0.85,18),'#6d4fc4',0,0.72,-0.04,head);c.rotation.x=-0.15;sph(head,0.06,'#ffd166',0.12,0.6,0.3)}
+  if(hat==='w_flower'){const r=mesh(new THREE.TorusGeometry(0.4,0.035,6,24),'#4fa05a',0,0.3,0,head);r.rotation.x=Math.PI/2-0.2;for(let i=0;i<8;i++){const a=i/8*Math.PI*2;sph(head,0.075,['#ff8fab','#ffd166','#fff','#c9a7ff'][i%4],Math.sin(a)*0.4,0.3+Math.cos(a)*0.08,Math.cos(a)*0.4)}}
+  if(hat==='w_bunny'){[-1,1].forEach(sx=>{const e=mesh(new THREE.CapsuleGeometry(0.07,0.42,4,10),'#fff',sx*0.17,0.72,-0.05,head);e.rotation.z=-sx*0.18;const i=mesh(new THREE.CapsuleGeometry(0.035,0.3,4,8),'#ffb3c6',sx*0.17,0.72,0.01,head);i.rotation.z=-sx*0.18})}
+  const back=cfg.back;
+  if(back==='w_bag'){box(body,0.46,0.52,0.22,'#c0623a',0,0.88,-0.36);box(body,0.4,0.18,0.06,'#a24f2c',0,0.75,-0.48);[-1,1].forEach(sx=>box(body,0.05,0.5,0.05,'#7a3b20',sx*0.16,0.95,0.24))}
+  if(back==='w_cape'){const c=box(body,0.62,0.95,0.04,'#e2574c',0,0.72,-0.32);c.rotation.x=0.12;box(body,0.5,0.06,0.3,'#e2574c',0,1.18,-0.16)}
+  if(back==='w_wings'){[-1,1].forEach(sx=>{const wg=sph(body,0.32,'#ffffff',sx*0.3,1.0,-0.36,0.5,1,0.12);wg.rotation.z=sx*0.5;wg.rotation.y=sx*0.5;sph(body,0.2,'#f3f6ff',sx*0.42,0.82,-0.38,0.45,0.8,0.1)})}
+  const hand=cfg.hand;
+  if(hand==='w_book'){const bk=box(A.armR,0.26,0.32,0.08,'#8a6fd1',0,-0.42,0.14);bk.rotation.x=0.3;sph(A.armR,0.07,'#ffe58a',0,-0.32,0.22)}
+  if(hand==='w_balloon'){cyl(A.armR,0.008,0.008,1.2,'#999',0,0.2,0.05,4);sph(A.armR,0.22,'#e2574c',0,0.95,0.05,1,1.15,1)}
   A.mats={skin,hair,top,bot};
   g.traverse(o=>{if(o.isMesh)o.castShadow=true});
   A.animate=(t,amt)=>{
@@ -338,6 +389,9 @@ scene.add(player.group);
 function rebuildPlayer(){
   player.group.clear();player.av=buildAvatar(S.avatar);player.group.add(player.av.group);
   player.label=labelSprite(S.avatar.displayName||'나',{bg:'rgba(255,224,130,.97)'});player.label.position.y=2.55;player.group.add(player.label);
+  // 읽은 책 이모지 말풍선 (💬 버튼으로 바꾸거나 끌 수 있어요)
+  player.bubble=null;const bid=S.bubble&&S.books[S.bubble]?.review?.emoji?S.bubble:null;
+  if(bid&&S.bubbleOn!==false){player.bubble=bubbleSprite(S.books[bid].review.emoji,`『${BOOKS[bid].title}』`);player.bubble.position.y=2.95;player.group.add(player.bubble)}
 }
 let cur=null;
 const keys={};
@@ -349,10 +403,12 @@ function addNPC(w,{cfg,x,z,name,lines,wander=true,label,onTalk,range=6,home}){
   const av=buildAvatar(cfg);const g=av.group;g.position.set(x,0,z);
   const lb=labelSprite(label||name);lb.position.y=2.55;g.add(lb);w.group.add(g);
   const n={av,g,name,state:{tx:x,tz:z,wait:Math.random()*2,talking:false},wander,range,home:home||[x,z],lines};
+  if(lines&&wander){const bk=rndPick(Object.keys(BOOK_EMOJI));n.book=bk;n.bub=bubbleSprite([...BOOK_EMOJI[bk]].sort(()=>Math.random()-0.5),`『${BOOKS[bk].title}』`);n.bub.position.y=2.95;n.bub.visible=false;g.add(n.bub);n.bubT=2+Math.random()*6;
+    n.lines=[...lines,`나는 『${BOOKS[bk].title}』를 ${BOOK_EMOJI[bk].join('')} 로 표현했어! 너는 어떤 이모지야?`]}
   w.npcs.push(n);
   w.interacts.push({obj:g,r:2.4,label:`${name}에게 말 걸기`,fn:async()=>{
     n.state.talking=true;const d=new THREE.Vector3().subVectors(player.group.position,g.position);g.rotation.y=Math.atan2(d.x,d.z);
-    try{ if(onTalk)await onTalk(n); else await say(name,rndPick(lines)); }finally{n.state.talking=false}}});
+    try{ if(onTalk)await onTalk(n); else await say(name,rndPick(n.lines)); }finally{n.state.talking=false}}});
   return n;
 }
 function updateNPCs(dt,w){
@@ -364,11 +420,19 @@ function updateNPCs(dt,w){
         else{const sp=2.2*dt;p.x+=dx/d*sp;p.z+=dz/d*sp;n.g.rotation.y=Math.atan2(dx,dz);moving=true}}
     }
     n.av.animate(T+n.home[0],moving?1:0);
+    if(n.bub){n.bubT-=dt;if(n.bubT<=0){n.bub.visible=!n.bub.visible;n.bubT=n.bub.visible?3.5:6+Math.random()*8}if(n.bub.visible)n.bub.position.y=2.95+Math.sin(T*2.4+n.home[0])*0.06}
   }
 }
 function inBounds(w,x,z){const b=w.bounds;if(b.r)return Math.hypot(x,z)<b.r-0.5;return x>b.x1&&x<b.x2&&z>b.z1&&z<b.z2}
 function collide(w,p,r=0.45){
   for(const c of w.colliders){
+    if(c.rot!==undefined){ // 회전된 건물: 건물 기준 좌표로 바꿔서 밀어내기
+      const cs=Math.cos(c.rot),sn=Math.sin(c.rot),wx=p.x-c.x,wz=p.z-c.z;
+      let lx=wx*cs-wz*sn,lz=wx*sn+wz*cs;
+      const nx=Math.max(-c.hw,Math.min(lx,c.hw)),nz=Math.max(-c.hd,Math.min(lz,c.hd));const dx=lx-nx,dz=lz-nz,d=Math.hypot(dx,dz);
+      if(d<r){if(d>0.0001){lx=nx+dx/d*r;lz=nz+dz/d*r}else{const m=Math.min(c.hw-lx,c.hw+lx,c.hd-lz,c.hd+lz);if(m===c.hw-lx)lx=c.hw+r;else if(m===c.hw+lx)lx=-c.hw-r;else if(m===c.hd-lz)lz=c.hd+r;else lz=-c.hd-r}
+        p.x=c.x+lx*cs+lz*sn;p.z=c.z-lx*sn+lz*cs}
+      continue}
     if(c.r!==undefined){const dx=p.x-c.x,dz=p.z-c.z,d=Math.hypot(dx,dz),m=c.r+r;if(d<m&&d>0.0001){p.x=c.x+dx/d*m;p.z=c.z+dz/d*m}}
     else{const nx=Math.max(c.x1,Math.min(p.x,c.x2)),nz=Math.max(c.z1,Math.min(p.z,c.z2));const dx=p.x-nx,dz=p.z-nz,d=Math.hypot(dx,dz);
       if(d<r){if(d>0.0001){p.x=nx+dx/d*r;p.z=nz+dz/d*r}else{const l=p.x-c.x1,rr=c.x2-p.x,t=p.z-c.z1,b=c.z2-p.z,m=Math.min(l,rr,t,b);if(m===l)p.x=c.x1-r;else if(m===rr)p.x=c.x2+r;else if(m===t)p.z=c.z1-r;else p.z=c.z2+r}}}
@@ -392,6 +456,15 @@ async function goScene(name,spawn){
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const fadeEl=document.getElementById('fade');
 
+/* ===== 원형 캠퍼스 배치 =====
+   각도(도): 0=북쪽(위), 시계 방향. 건물은 모두 광장(가운데)을 바라봐요. */
+const RING=23;
+const STATIONS={library:0,classroom:60,art:120,shop:-120,music:-60};
+const POND=[0,26]; // 연못 (카메라 쪽이라 낮은 것만 둬요)
+const rad=d=>d*Math.PI/180;
+const stPos=(deg,r=RING)=>[Math.sin(rad(deg))*r,-Math.cos(rad(deg))*r];
+const doorOf=room=>stPos(STATIONS[room],RING-3.5-2.6); // 건물 문 앞(밖으로 나왔을 때 서는 곳)
+
 /* ===== 건물/소품 헬퍼 ===== */
 function tree(w,x,z,s=1,c1='#5fb36a',fruit){
   const g=new THREE.Group();g.position.set(x,0,z);
@@ -405,8 +478,8 @@ function flowers(w,n,rad,cx=0,cz=0,skipR=0){
   for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,r=skipR+Math.random()*(rad-skipR);const x=cx+Math.cos(a)*r,z=cz+Math.sin(a)*r;
     cyl(w.group,0.02,0.02,0.25,'#4fa05a',x,0.12,z,4);sph(w.group,0.1,rndPick(cols),x,0.3,z,1,0.6,1).castShadow=false}
 }
-function building(w,{x,z,bw,bd,bh,color,roof,sign,door=true}){
-  const g=new THREE.Group();g.position.set(x,0,z);w.group.add(g);
+function building(w,{x,z,bw,bd,bh,color,roof,sign,door=true,rot=0}){
+  const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rot;w.group.add(g);
   box(g,bw,bh,bd,color,0,bh/2,0);
   box(g,bw+0.5,0.35,bd+0.5,shadeC(color,-30),0,0.17,0);
   const r=mesh(new THREE.ConeGeometry(bw*0.78,2.6,4),roof,0,bh+1.3,0,g);r.rotation.y=Math.PI/4;r.scale.z=bd/bw;
@@ -416,8 +489,39 @@ function building(w,{x,z,bw,bd,bh,color,roof,sign,door=true}){
   for(const sx of [-1,1]){for(const yy of [bh*0.35,bh*0.72]){box(g,1.3,1.2,0.15,'#ffffff',sx*bw*0.3,yy,bd/2+0.02);box(g,1.1,1.0,0.17,'#9bd8f5',sx*bw*0.3,yy,bd/2+0.03)}}
   if(door){box(g,1.8,2.7,0.2,'#7a5233',0,1.4,bd/2+0.05);box(g,2.2,0.2,0.4,'#fff',0,2.85,bd/2+0.15);sph(g,0.08,'#ffd166',0.55,1.4,bd/2+0.2)}
   const sp=labelSprite(sign,{size:36});sp.position.set(0,bh+3.4,bd/2);sp.scale.multiplyScalar(1.6);g.add(sp);
-  w.colliders.push({x1:x-bw/2,x2:x+bw/2,z1:z-bd/2,z2:z+bd/2});
+  w.colliders.push(rot?{x,z,hw:bw/2+1.6,hd:bd/2,rot}:{x1:x-bw/2,x2:x+bw/2,z1:z-bd/2,z2:z+bd/2});
   return g;
+}
+
+/* ===== 커피트럭 상점 (캠퍼스 밖에 나와 있는 이동식 상점) ===== */
+function shopTruck(w,deg){
+  const [x,z]=stPos(deg),rot=-rad(deg);
+  const t=new THREE.Group();t.position.set(x,0,z);t.rotation.y=rot;w.group.add(t);
+  // 차체와 운전석
+  box(t,6.4,2.9,3,'#8fe3c0',-0.6,1.95,0);box(t,6.5,0.35,3.1,'#4fb48c',-0.6,0.6,0);
+  box(t,2,2.2,2.9,'#8fe3c0',3.6,1.6,0);box(t,0.1,1,2.4,'#a9defa',4.62,2.1,0);box(t,1.6,0.9,0.05,'#a9defa',3.7,2.2,1.47);
+  // 바퀴
+  [[-2.6,1.45],[-2.6,-1.45],[3.4,1.45],[3.4,-1.45]].forEach(([wx,wz])=>{const wh=cyl(t,0.55,0.55,0.4,'#333',wx,0.55,wz,16);wh.rotation.x=Math.PI/2;const hb=cyl(t,0.22,0.22,0.42,'#ddd',wx,0.55,wz,10);hb.rotation.x=Math.PI/2});
+  // 판매 창구 (광장 쪽)
+  box(t,4,1.3,0.1,'#3b3226',-0.8,2.25,1.52);box(t,4.2,0.12,0.7,'#f7f5ef',-0.8,1.55,1.8);
+  // 줄무늬 차양
+  for(let i=0;i<8;i++){const a=box(t,0.55,0.08,1.4,i%2?'#ff8fab':'#fffaf0',-2.73+i*0.55,3.25,2.1);a.rotation.x=0.35}
+  // 메뉴판과 컵 소품
+  box(t,1.6,1.2,0.08,'#3b3226',1.9,1.6,1.56);const mn=labelSprite('오늘의 메뉴: 꾸미기 아이템',{size:26,w:420});mn.scale.multiplyScalar(0.55);mn.position.set(1.9,1.65,1.65);t.add(mn);
+  [[-2,1],[-1.2,1],[0.2,1]].forEach(([cx])=>{cyl(t,0.13,0.1,0.28,'#fff',cx,1.75,1.85,10);cyl(t,0.14,0.14,0.04,'#8b5e3c',cx,1.9,1.85,10)});
+  // 지붕 위 커다란 컵 간판
+  const cup=new THREE.Group();cup.position.set(-0.6,3.4,0);t.add(cup);cyl(cup,0.7,0.5,1,'#fffaf0',0,0.5,0,18);cyl(cup,0.72,0.72,0.12,'#ff8fab',0,0.65,0,18);cyl(cup,0.75,0.75,0.15,'#8b5e3c',0,1.05,0,18);
+  const sg=labelSprite('☕ 구름 상점 트럭',{size:36});sg.position.set(0,6,0.5);sg.scale.multiplyScalar(1.4);t.add(sg);
+  // 알전구
+  for(let i=0;i<9;i++)sph(t,0.09,['#ffd166','#ff8fab','#8fd3ff'][i%3],-3.6+i*0.75,3.55-Math.sin(i/8*Math.PI)*0.25,1.6);
+  // 파라솔 테이블
+  const [ux,uz]=stPos(deg+14,RING-6);const um=new THREE.Group();um.position.set(ux,0,uz);w.group.add(um);
+  cyl(um,0.06,0.06,2.6,'#8b5e3c',0,1.3,0,6);mesh(new THREE.ConeGeometry(1.6,0.7,10),'#ffd166',0,2.7,0,um);cyl(um,0.8,0.8,0.08,'#fffaf0',0,1.0,0,16);w.colliders.push({x:ux,z:uz,r:1});
+  w.colliders.push({x,z,hw:4.7,hd:1.7,rot});
+  // 점원 토토 (트럭 앞)
+  const [nx,nz]=stPos(deg,RING-3.2);
+  addNPC(w,{cfg:{displayName:'토토',skin:'#efc39a',hair:'#e8c76a',hairStyle:'bun',top:'#ff8fab',topStyle:'overall',bottom:'#f0f0f0',bottomStyle:'pants',face:'cheerful',eyes:'sparkle',accessory:'bow'},x:nx,z:nz,name:'토토',label:'☕ 상점 토토',wander:false,onTalk:async()=>{await say('토토','어서 와요! 독서 포인트로 내 캐릭터랑 사물함을 꾸밀 수 있어요.');openShop()}});
+  w.interacts[w.interacts.length-1].r=3.4;
 }
 
 /* ===== 방(실내) 공통 ===== */
@@ -435,7 +539,7 @@ function makeRoom(name,{W,D,floor,wall,sky='#fff1d6',deco}){
   w.interacts.push({x:0,z:D/2-0.9,r:1.8,label:'밖으로 나가기',fn:()=>exitRoom()});
   return w;
 }
-async function exitRoom(){await goScene('campus',cur.exitTo||[0,-8])}
+async function exitRoom(){await goScene('campus',cur.exitTo||[0,10])}
 
 function shelf(g,x,z,books=36,w=2.6,h=3.4,rot=0,colors){
   const s=new THREE.Group();s.position.set(x,0,z);s.rotation.y=rot;g.add(s);
@@ -477,36 +581,41 @@ SCENES.campus=()=>{
   // 광장
   mesh(new THREE.CylinderGeometry(10,10,0.12,40),'#f1e0b8',0,0.03,0,g).castShadow=false;
   mesh(new THREE.CylinderGeometry(7,7,0.14,40),'#e8d09a',0,0.04,0,g).castShadow=false;
-  // 길
-  [-22,-8,8,22].forEach(x=>{const r=mesh(new THREE.BoxGeometry(3,0.1,22),'#f1e0b8',x*0.55,0.04,-12.5,g);r.castShadow=false;r.rotation.y=Math.atan2(x*0.45,22)*-1;r.position.x=x*0.5});
-  const road=mesh(new THREE.BoxGeometry(64,0.1,3.2),'#f1e0b8',0,0.05,-19.6,g);road.castShadow=false;
+  // 광장을 두르는 둥근 산책길 + 건물마다 이어지는 길
+  const ringRoad=new THREE.Mesh(new THREE.RingGeometry(15.2,17.4,64),mat('#f1e0b8'));ringRoad.rotation.x=-Math.PI/2;ringRoad.position.y=0.05;g.add(ringRoad);
+  Object.values(STATIONS).forEach(deg=>{const len=RING-3.5-9;const [px,pz]=stPos(deg,9+len/2);const r=mesh(new THREE.BoxGeometry(3,0.1,len),'#f1e0b8',px,0.06,pz,g);r.castShadow=false;r.rotation.y=-rad(deg)});
   // 분수
   const f=new THREE.Group();g.add(f);cyl(f,2.8,3,0.7,'#cfd8dc',0,0.35,0,28);cyl(f,2.4,2.4,0.72,'#7cd0f5',0,0.4,0,28);cyl(f,0.4,0.5,1.6,'#cfd8dc',0,1.1,0,12);cyl(f,1.2,1.2,0.25,'#cfd8dc',0,1.8,0,20);sph(f,0.35,'#8fdcff',0,2.1,0);
   w.colliders.push({x:0,z:0,r:3.1});
-  // 건물 4채
-  const defs=[{k:'music',x:-24,sign:'🎵 음악실',color:'#fbeccd',roof:'#d9562f',room:'music'},{k:'library',x:-8,sign:'📚 도서관',color:'#f8e6c2',roof:'#c9452c',room:'library'},{k:'class',x:8,sign:'🏫 우리 반 교실',color:'#fdf0d2',roof:'#d9562f',room:'classroom'},{k:'art',x:24,sign:'🎨 미술실',color:'#fbeccd',roof:'#c9452c',room:'art'}];
+  // 건물 4채: 광장을 빙 둘러 원형으로
+  const defs=[{sign:'🎵 음악실',color:'#fbeccd',roof:'#d9562f',room:'music'},{sign:'📚 도서관',color:'#f8e6c2',roof:'#c9452c',room:'library'},{sign:'🏫 우리 반 교실',color:'#fdf0d2',roof:'#d9562f',room:'classroom'},{sign:'🎨 미술실',color:'#fbeccd',roof:'#c9452c',room:'art'}];
   const names={music:'음악실',library:'도서관',classroom:'우리 반 교실',art:'미술실'};
   defs.forEach(d=>{
-    building(w,{x:d.x,z:-24,bw:12,bd:7,bh:5.2,color:d.color,roof:d.roof,sign:d.sign});
-    w.interacts.push({x:d.x,z:-19.6,r:2.6,label:`${names[d.room]} 들어가기`,fn:async()=>{await goScene(d.room)}});
+    const deg=STATIONS[d.room],[bx,bz]=stPos(deg),[dx,dz]=doorOf(d.room);
+    building(w,{x:bx,z:bz,bw:12,bd:7,bh:5.2,color:d.color,roof:d.roof,sign:d.sign,rot:-rad(deg)});
+    w.interacts.push({x:dx,z:dz,r:2.6,label:`${names[d.room]} 들어가기`,fn:async()=>{await goScene(d.room)}});
   });
+  // 상점: 교실 밖으로 나온 커피트럭
+  shopTruck(w,STATIONS.shop);
   // 게시판 (리그)
-  const bd=new THREE.Group();bd.position.set(13,0,6);bd.rotation.y=-0.5;g.add(bd);
+  const bdA=150,[bdx,bdz]=stPos(bdA,13);
+  const bd=new THREE.Group();bd.position.set(bdx,0,bdz);bd.rotation.y=-rad(bdA);g.add(bd);
   box(bd,0.25,2.2,0.25,'#8b5e3c',-1.2,1.1,0);box(bd,0.25,2.2,0.25,'#8b5e3c',1.2,1.1,0);box(bd,3.2,2,0.2,'#fff7e0',0,2.2,0);box(bd,3.4,2.2,0.15,'#8b5e3c',0,2.2,-0.08);
   const trophy=emojiSprite('🏆',1.4);trophy.position.set(0,2.2,0.2);bd.add(trophy);
   const lb=labelSprite('독서 리그 게시판');lb.position.set(0,4.1,0);bd.add(lb);
-  w.colliders.push({x:13,z:6,r:1.8});
-  w.interacts.push({x:11.4,z:7.6,r:3,label:'독서 리그 게시판 보기',fn:()=>openLeague()});
+  w.colliders.push({x:bdx,z:bdz,r:1.8});
+  const [bix,biz]=stPos(bdA,11);w.interacts.push({x:bix,z:biz,r:3,label:'독서 리그 게시판 보기',fn:()=>openLeague()});
   // 연못
-  const pond=mesh(new THREE.CylinderGeometry(5,5,0.2,32),'#7cd0f5',-19,0.05,10,g);pond.castShadow=false;
-  w.colliders.push({x:-19,z:10,r:5.2});
-  cyl(g,5.4,5.5,0.12,'#e7d6a9',-19,0.03,10,32).castShadow=false;
+  const pond=mesh(new THREE.CylinderGeometry(5,5,0.2,32),'#7cd0f5',POND[0],0.05,POND[1],g);pond.castShadow=false;
+  w.colliders.push({x:POND[0],z:POND[1],r:5.2});
+  cyl(g,5.4,5.5,0.12,'#e7d6a9',POND[0],0.03,POND[1],32).castShadow=false;
   // 벤치
   [[-6,6,0.3],[6,-7,Math.PI]].forEach(([x,z,r])=>{const b=new THREE.Group();b.position.set(x,0,z);b.rotation.y=r;g.add(b);box(b,2.2,0.15,0.7,'#b7814f',0,0.55,0);box(b,2.2,0.7,0.12,'#b7814f',0,0.95,-0.3);box(b,0.12,0.5,0.6,'#6e4a2c',-0.9,0.25,0);box(b,0.12,0.5,0.6,'#6e4a2c',0.9,0.25,0);w.colliders.push({x1:x-1.2,x2:x+1.2,z1:z-0.6,z2:z+0.6})});
   // 나무
-  [[-30,-6],[-28,12],[-16,22],[0,28],[18,24],[29,10],[31,-8],[-33,-18],[-12,-10],[12,-10],[20,16],[-22,26]].forEach(([x,z],i)=>tree(w,x,z,0.9+(i%3)*0.2,i%4===0?'#f4a6c1':'#5fb36a',i%5===0?'#ff9f68':undefined));
-  for(let a=0;a<28;a++){const r=34.5,ang=a/28*Math.PI*2;if(Math.sin(ang)<-0.55)continue;tree(w,Math.cos(ang)*r,Math.sin(ang)*r,1.1+Math.random()*0.4)}
-  flowers(w,160,34,0,0,11);
+  const nearSt=(x,z,m=9)=>Object.values(STATIONS).some(dg=>{const [sx,sz]=stPos(dg);return Math.hypot(x-sx,z-sz)<m});
+  [[-30,-6],[-28,12],[-16,22],[0,28],[18,24],[29,10],[31,-8],[-33,-18],[-12,-10],[12,-10],[20,16],[-22,26],[-9,15],[10,-14],[-13,-4],[14,2]].forEach(([x,z],i)=>{if(!nearSt(x,z)&&Math.hypot(x-POND[0],z-POND[1])>7)tree(w,x,z,0.9+(i%3)*0.2,i%4===0?'#f4a6c1':'#5fb36a',i%5===0?'#ff9f68':undefined)});
+  for(let a=0;a<28;a++){const r=34.5,ang=a/28*Math.PI*2;if(nearSt(Math.cos(ang)*r,Math.sin(ang)*r,8))continue;tree(w,Math.cos(ang)*r,Math.sin(ang)*r,1.1+Math.random()*0.4)}
+  flowers(w,160,34,0,0,18);
   // 구름
   for(let i=0;i<7;i++){const c=new THREE.Group();const x=-80+Math.random()*160,z=-60+Math.random()*60,y=22+Math.random()*10;c.position.set(x,y,z);
     [[0,0,0,3],[2.6,-0.3,0.4,2.4],[-2.6,-0.4,0,2.2]].forEach(([a,b,cc,r])=>sph(c,r,'#fff',a,b,cc,1.2,0.6,1).castShadow=false);g.add(c);w.tick.push(dt=>{c.position.x+=dt*0.7;if(c.position.x>90)c.position.x=-90})}
@@ -525,7 +634,7 @@ async function intro(){
 /* --- 도서관 --- */
 SCENES.library=()=>{
   const w=makeRoom('library',{W:22,D:15,floor:'#d9b98a',wall:'#f2e3c2'});const g=w.group;
-  w.exitTo=[-8,-19];
+  w.exitTo=doorOf('library');
   for(let i=0;i<5;i++)shelf(g,-8.5+i*4.25,-D(15)+0.2,40);
   [[-10.2,-2],[10.2,-2]].forEach(([x,z])=>shelf(g,x,z,40,3,3.4,x<0?Math.PI/2:-Math.PI/2));
   w.colliders.push({x1:-11.6,x2:-9.8,z1:-3.5,z2:-0.5},{x1:9.8,x2:11.6,z1:-3.5,z2:-0.5});
@@ -541,7 +650,7 @@ SCENES.library=()=>{
   // 읽는 친구들
   const t=new THREE.Group();t.position.set(-6,0,4);g.add(t);cyl(t,1.4,1.4,0.15,'#c68b59',0,1,0,24);cyl(t,0.15,0.15,1,'#8b5e3c',0,0.5,0,8);w.colliders.push({x:-6,z:4,r:1.5});
   [[-7.5,4.5,'지우'],[-4.6,3.3,'서연']].forEach(([x,z,n])=>addNPC(w,{cfg:randomAvatar(n),x,z,name:n,wander:false,lines:['쉿… 책 읽는 중이야 📖','"데미안"은 조금 어렵지만 멋져.','헤세 사서님이 추천해 주신 책은 항상 재밌어!']}));
-  w.exitTo=[-8,-19];return w;
+  w.exitTo=doorOf('library');return w;
 };
 const D=v=>v/2;
 
@@ -569,7 +678,7 @@ function openRecommend(){
 /* --- 우리 반 교실 --- */
 SCENES.classroom=()=>{
   const W2=22,D2=16;
-  const w=makeRoom('classroom',{W:W2,D:D2,floor:'#e7c99b',wall:'#fdf2d0'});const g=w.group;w.exitTo=[8,-19];
+  const w=makeRoom('classroom',{W:W2,D:D2,floor:'#e7c99b',wall:'#fdf2d0'});const g=w.group;w.exitTo=doorOf('classroom');
   // 칠판
   box(g,7,2.8,0.2,'#6b4a2e',0,3.2,-D2/2+0.15);box(g,6.6,2.4,0.22,'#2f5d4a',0,3.2,-D2/2+0.18);
   const cs=labelSprite('오늘의 독서 퀘스트: 한 권 읽고 서평 쓰기',{size:28,w:560});cs.position.set(0,3.3,-D2/2+0.5);cs.scale.multiplyScalar(0.8);g.add(cs);
@@ -614,13 +723,6 @@ SCENES.classroom=()=>{
   const exl=labelSprite('📖 디지털 학급 문집');exl.position.set(0,3,0);ex.add(exl);
   w.colliders.push({x1:4.2,x2:7.8,z1:-7.2,z2:-5.8});
   w.interacts.push({x:6,z:-4.8,r:2.6,label:'디지털 학급 문집 펼치기',fn:()=>openAnthology()});
-  // 상점
-  const shop=new THREE.Group();shop.position.set(-6.5,0,7.4-0.0);g.add(shop);
-  box(shop,3.4,1,1.2,'#ff9fb8',0,0.5,0);box(shop,3.8,0.15,1.5,'#fff',0,1.05,0);
-  const aw=mesh(new THREE.BoxGeometry(3.8,0.3,1.8),'#ffd166',0,2.9,0.3,shop);aw.rotation.x=0.3;box(shop,0.1,2.6,0.1,'#8b5e3c',-1.8,1.5,0.9);box(shop,0.1,2.6,0.1,'#8b5e3c',1.8,1.5,0.9);
-  const sl=labelSprite('🛍️ 구름 상점');sl.position.set(0,3.8,0.3);shop.add(sl);
-  w.colliders.push({x1:-8.4,x2:-4.6,z1:6.6,z2:8});
-  addNPC(w,{cfg:{displayName:'토토',skin:'#efc39a',hair:'#e8c76a',hairStyle:'bun',top:'#ff8fab',topStyle:'overall',bottom:'#f0f0f0',bottomStyle:'pants',face:'cheerful',eyes:'sparkle',accessory:'bow'},x:-6.5,z:6.1,name:'토토',label:'🛍️ 상점 토토',wander:false,onTalk:async()=>{await say('토토','어서 와요! 독서 포인트로 사물함을 꾸밀 수 있어요.');openShop()}});
   // 친구들
   addNPC(w,{cfg:randomAvatar('하윤'),x:2,z:3.5,name:'하윤',lines:['오늘 학급 문고에 새 책이 들어왔대!','서평에 해시태그 달면 문집에서 찾기 쉬워.','나는 사물함에 🍀 붙였어!'],range:4,home:[1,4]});
   addNPC(w,{cfg:randomAvatar('이안'),x:-1,z:5,name:'이안',lines:['15소년 표류기 협동 게임, 같이 하면 훨씬 쉬워!','서평 쓰면 포인트 쏙쏙 올라가지~'],range:4,home:[-1,4.5]});
@@ -629,7 +731,7 @@ SCENES.classroom=()=>{
 
 /* --- 미술실 --- */
 SCENES.art=()=>{
-  const w=makeRoom('art',{W:20,D:15,floor:'#e6dccb',wall:'#e7f3ff'});const g=w.group;w.exitTo=[24,-19];
+  const w=makeRoom('art',{W:20,D:15,floor:'#e6dccb',wall:'#e7f3ff'});const g=w.group;w.exitTo=doorOf('art');
   // 전시 벽: 완성된 표지
   const covers=Object.entries(S.books).filter(([,b])=>b.cover);
   const slots=[-7,-3.5,0,3.5,7];
@@ -659,20 +761,20 @@ SCENES.art=()=>{
 
 /* --- 음악실 --- */
 SCENES.music=()=>{
-  const w=makeRoom('music',{W:20,D:15,floor:'#c9a7e8',wall:'#fde8f1'});const g=w.group;w.exitTo=[-24,-19];
+  const w=makeRoom('music',{W:20,D:15,floor:'#c9a7e8',wall:'#fde8f1'});const g=w.group;w.exitTo=doorOf('music');
   // 피아노
   const p=new THREE.Group();p.position.set(0,0,-4);g.add(p);
   box(p,4.8,1.6,1.9,'#262626',0,1.0,0);box(p,4.4,0.2,1.2,'#fff',0,1.85,0.4);for(let i=0;i<8;i++)box(p,0.04,0.05,1.1,'#222',-1.9+i*0.54,1.97,0.4);
   box(p,4.8,2.2,0.3,'#262626',0,2.6,-0.8);box(p,0.15,0.8,0.15,'#262626',-2.2,0.4,0.6);box(p,0.15,0.8,0.15,'#262626',2.2,0.4,0.6);
   box(g,2.2,0.6,0.9,'#444',0,0.5,-2.6);
-  const pl=labelSprite('🎹 피아노');pl.position.set(0,4.2,-4);g.add(pl);
+  const pl=labelSprite('🎼 책 음악 만들기');pl.position.set(0,4.2,-4);g.add(pl);
   w.colliders.push({x1:-2.5,x2:2.5,z1:-5,z2:-3});
-  w.interacts.push({x:0,z:-2.0,r:2.5,label:'피아노 치기',fn:()=>openPiano()});
+  w.interacts.push({x:0,z:-2.0,r:2.5,label:'🎼 책 음악 만들기',fn:()=>openPiano()});
   // 북과 악기 장식
   [[-7,-2],[7,-2]].forEach(([x,z],i)=>{cyl(g,0.9,0.9,0.9,i?'#ff8fab':'#8fd3ff',x,0.6,z,20);cyl(g,0.92,0.92,0.1,'#fff',x,1.1,z,20);w.colliders.push({x,z,r:1})});
   for(let i=0;i<5;i++){const e=emojiSprite(['🎷','🎺','🎻','🥁','🎸'][i],1.1);e.position.set(-6+i*3,4.6,-6.9);g.add(e)}
   addNPC(w,{cfg:randomAvatar('수아'),x:5,z:2,name:'수아',lines:['피아노 소리를 들으면 책 속 장면이 떠올라.','「어린 왕자」를 읽을 땐 잔잔한 음악이 어울려.'],range:4,home:[5,2]});
-  addNPC(w,{cfg:{displayName:'음악 선생님',skin:'#f7d7bd',hair:'#23180f',hairStyle:'long',top:'#e2574c',topStyle:'tee',bottom:'#3a4a5a',bottomStyle:'skirt',face:'cheerful',eyes:'happy',accessory:'none'},x:-5,z:3,name:'음악 선생님',wander:false,onTalk:async()=>say('음악 선생님','책을 읽고 떠오른 분위기를 건반으로 표현해 볼까요? 숫자 1~8 키를 눌러도 소리가 나요!')});
+  addNPC(w,{cfg:{displayName:'음악 선생님',skin:'#f7d7bd',hair:'#23180f',hairStyle:'long',top:'#e2574c',topStyle:'tee',bottom:'#3a4a5a',bottomStyle:'skirt',face:'cheerful',eyes:'happy',accessory:'none'},x:-5,z:3,name:'음악 선생님',wander:false,onTalk:async()=>say('음악 선생님','책을 읽고 떠오른 장면을 음악으로 만들어 볼까요? 피아노 앞에서 칸을 눌러 음을 찍고 북 소리도 넣어 봐요. 저장하면 그 책의 디지털 북에 음악이 담겨요!')});
   return w;
 };
 
@@ -766,6 +868,7 @@ function update(dt){
     if(player.target&&Math.hypot(p.x-px-mx*sp,p.z-pz-mz*sp)>0.2*sp+0.01&&Math.hypot(p.x-px,p.z-pz)<sp*0.3)player.target=null;
     const ta=Math.atan2(mx,mz);let da=ta-player.facing;da=Math.atan2(Math.sin(da),Math.cos(da));player.facing+=da*Math.min(1,dt*14);player.group.rotation.y=player.facing}
   player.av.animate(T,moving?1:0);
+  if(player.bubble)player.bubble.position.y=2.95+Math.sin(T*2.4)*0.06;
   updateNPCs(dt,cur);cur.tick.forEach(f=>f(dt));
   // 상호작용 탐색
   let best=null,bd=1e9;const pp=player.group.position;
@@ -793,7 +896,7 @@ function openClassLibrary(){
   ids.forEach(id=>{const b=BOOKS[id],st=S.books[id];
     const c=document.createElement('div');c.className='card';
     const act=id==='boys15'?'협동 게임 + 인터랙티브 스토리':'인터랙티브 스토리텔링';
-    c.innerHTML=`<div class="spine" style="background:${b.color}"></div><h3>${b.badge} ${b.title}</h3><div class="mut">${bookStatusText(st)}</div><p>🎮 ${act}</p><button class="btn">${st.status==='reviewed'?'다시 보기':st.status==='storyDone'?'서평 쓰기':'활동 시작'}</button>`;
+    c.innerHTML=`<div class="spine" style="background:${b.color}"></div><h3>${b.badge} ${b.title}</h3><div class="mut">${bookStatusText(st)}${st.review?.emoji?' · 💬 '+st.review.emoji.join(''):''}${st.song?' · 🎵 음악 있음':''}</div><p>🎮 ${act}</p><button class="btn">${st.status==='reviewed'?'다시 보기':st.status==='storyDone'?'서평 쓰기':'활동 시작'}</button>`;
     c.querySelector('button').onclick=()=>{closeModal();if(st.status==='reviewed')openMyBooks(id);else runActivity(id)};box.appendChild(c)});
 }
 async function runActivity(id){
@@ -805,13 +908,13 @@ async function runActivity(id){
     st.story=res;st.status='storyDone';save();
   }
   const rv=await writeReview(b);if(!rv){toast('서평은 언제든 이어서 쓸 수 있어요 ✏️');return}
-  st.review=rv;st.status='reviewed';
+  st.review=rv;st.status='reviewed';S.bubble=id;rebuildPlayer();
   const gain=40+Math.min(20,Math.floor(rv.text.length/10));S.points+=gain;save();
   await rewardModal(b,gain);
 }
 function rewardModal(b,gain){return new Promise(res=>{
   const m=openModal(`<div class="center"><div style="font-size:4rem">${b.badge}</div><h2>『${b.title}』 독서 완료!</h2><p>기념 배지를 획득했어요. 사물함에 자동으로 붙었어요.</p><p class="jua" style="font-size:1.4rem">+${gain} 포인트 💰</p><p class="mut">이제 <b>미술실</b>에서 AI 책 표지를 만들면 +20P! 학급 문집에도 자동으로 실려요.</p><button class="btn">확인</button></div>`,{onClose:res});
-  m.querySelector('button').onclick=()=>closeModal();confetti();})}
+  m.querySelector('.btn').onclick=()=>closeModal();confetti();})}
 function confetti(){const e=['🎉','✨','⭐','🎊','📚'];for(let i=0;i<26;i++){const s=document.createElement('div');s.textContent=rndPick(e);Object.assign(s.style,{position:'fixed',left:Math.random()*100+'vw',top:'-30px',fontSize:20+Math.random()*20+'px',transition:`transform ${1.6+Math.random()}s ease-in, opacity 2s`,zIndex:99,pointerEvents:'none'});document.body.appendChild(s);requestAnimationFrame(()=>{s.style.transform=`translateY(${innerHeight+60}px) rotate(${Math.random()*540}deg)`;s.style.opacity='.2'});setTimeout(()=>s.remove(),2800)}}
 
 /* --- 협동 게임 (15소년 표류기) --- */
@@ -858,36 +961,40 @@ function playStory(b){return new Promise(res=>{
 
 /* --- 서평 --- */
 function writeReview(b){return new Promise(res=>{
-  let stars=5,done=false;const tags=new Set();const prefill=S.books[b.id].review;
+  let stars=5,done=false;const tags=new Set();const prefill=S.books[b.id].review;let emo=prefill?.emoji?[...prefill.emoji]:[];
   const m=openModal(`<h2>✏️ 서평 쓰기 — 『${b.title}』</h2>
    <div class="row" id="stars" style="font-size:1.8rem;cursor:pointer;margin-bottom:6px"></div>
    <textarea id="rv" placeholder="인상 깊었던 장면, 내 마음에 남은 말, 내가 주인공이었다면…을 자유롭게 써 보세요. (20자 이상)"></textarea>
    <div class="mut" id="cnt">0자</div>
+   <h3 style="margin:10px 0 4px">😀 이 책을 이모지 3개로 표현해 보세요 <span class="mut">(내 캐릭터 머리 위 말풍선에 떠요!)</span></h3>
+   <div class="row" style="gap:10px;align-items:center"><div id="epv" style="font-size:2rem;min-width:120px;background:#fff;border:3px solid var(--ink);border-radius:20px;padding:4px 12px;text-align:center">❔❔❔</div><div id="ep" style="flex:1"></div></div>
    <h3 style="margin:10px 0 4px">해시태그 고르기</h3><div id="tg"></div>
    <div class="row" style="margin-top:6px"><input type="text" id="ctag" placeholder="나만의 해시태그 (예: #나의여정)" style="flex:1"><button class="btn alt" id="addtag">추가</button></div>
    <div class="center" style="margin-top:14px"><button class="btn" id="sub" disabled>서평 등록하기</button></div>`,{onClose:()=>{if(!done)res(null)}});
   const sd=()=>{m.querySelector('#stars').innerHTML=[1,2,3,4,5].map(n=>`<span data-n="${n}">${n<=stars?'⭐':'☆'}</span>`).join('');m.querySelectorAll('#stars span').forEach(s=>s.onclick=()=>{stars=+s.dataset.n;sd()})};sd();
   const drawTags=()=>{const all=[...new Set([...HASHTAGS,...tags])];m.querySelector('#tg').innerHTML='';all.forEach(t=>{const e=document.createElement('button');e.className='tag btnlike'+(tags.has(t)?' on':'');e.textContent=t;e.onclick=()=>{tags.has(t)?tags.delete(t):tags.add(t);drawTags();chk()};m.querySelector('#tg').appendChild(e)})};drawTags();
-  const rv=m.querySelector('#rv');const chk=()=>{m.querySelector('#cnt').textContent=rv.value.length+'자';m.querySelector('#sub').disabled=!(rv.value.trim().length>=20&&tags.size>=1)};
+  const drawEmo=()=>{m.querySelector('#epv').textContent=emo.length?emo.join(''):'❔❔❔';m.querySelector('#ep').innerHTML=EMOJI_PALETTE.map(e=>`<button class="opt ${emo.includes(e)?'on':''}" data-e="${e}" style="font-size:1.25rem;padding:2px 7px;margin:2px">${e}</button>`).join('');
+    m.querySelectorAll('#ep button').forEach(x=>x.onclick=()=>{const e=x.dataset.e,i=emo.indexOf(e);if(i>=0)emo.splice(i,1);else{if(emo.length>=3)emo.shift();emo.push(e)}drawEmo();chk()})};
+  const rv=m.querySelector('#rv');const chk=()=>{m.querySelector('#cnt').textContent=rv.value.length+'자';m.querySelector('#sub').disabled=!(rv.value.trim().length>=20&&tags.size>=1&&emo.length>=1)};drawEmo();
   rv.oninput=chk;if(prefill){rv.value=prefill.text;chk()}
   m.querySelector('#addtag').onclick=()=>{let v=m.querySelector('#ctag').value.trim().replace(/\s+/g,'');if(!v)return;if(!v.startsWith('#'))v='#'+v;tags.add(v.slice(0,14));m.querySelector('#ctag').value='';drawTags();chk()};
-  m.querySelector('#sub').onclick=()=>{done=true;modalClose=null;closeModal(true);res({text:rv.value.trim(),stars,tags:[...tags]})};
-  m.querySelector('#cnt').insertAdjacentHTML('afterend','<div class="mut">해시태그를 1개 이상 골라 주세요.</div>');
+  m.querySelector('#sub').onclick=()=>{done=true;modalClose=null;closeModal(true);res({text:rv.value.trim(),stars,tags:[...tags],emoji:[...emo]})};
+  m.querySelector('#cnt').insertAdjacentHTML('afterend','<div class="mut">이모지 1개 이상, 해시태그 1개 이상 골라 주세요.</div>');
 })}
 
 /* --- 디지털 북(내 책) / 학급 문집 --- */
-function bookHtml(id,st,who='나'){const b=BOOKS[id];
+function bookHtml(id,st,who='나'){const b=BOOKS[id];const sk=who+'-'+id;if(st.song)SONGS[sk]=st.song;
   return `<div class="bookpage"><div class="row">${st.cover?`<img src="${st.cover}" style="width:110px;border-radius:8px;box-shadow:0 3px 8px rgba(0,0,0,.25)">`:`<div style="width:110px;height:146px;border-radius:8px;background:${b.color};color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;padding:6px;font-family:Jua">${b.title}</div>`}
-  <div style="flex:1;min-width:200px"><h3 style="margin:0">${b.badge} ${b.title}</h3><div class="mut">${who} · ${st.date||''} · ${'⭐'.repeat(st.review?.stars||0)}</div>
+  <div style="flex:1;min-width:200px"><h3 style="margin:0">${b.badge} ${b.title} ${st.review?.emoji?`<span style="font-size:1.5rem;background:#fff;border:2px solid var(--ink);border-radius:16px;padding:0 8px;margin-left:4px">💬 ${st.review.emoji.join('')}</span>`:''}</h3><div class="mut">${who} · ${st.date||''} · ${'⭐'.repeat(st.review?.stars||0)}</div>
   ${st.story?`<p style="margin:8px 0 4px"><b>나의 이야기</b> <span class="tag on">${TRAIT[st.story.top]}</span></p><div class="mut">${st.story.picks.map(p=>'· '+p).join('<br>')}</div><p style="margin:6px 0">${st.story.ending}</p>`:''}
-  <p style="margin:8px 0"><b>서평</b><br>${(st.review?.text||'').replace(/</g,'&lt;')}</p><div>${(st.review?.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div></div></div></div>`}
+  <p style="margin:8px 0"><b>서평</b><br>${(st.review?.text||'').replace(/</g,'&lt;')}</p>${st.song?songBlock(st.song,sk):''}<div>${(st.review?.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div></div></div></div>`}
 function openMyBooks(focus){
-  const done=Object.entries(S.books).filter(([,b])=>b.status==='reviewed');
-  const m=openModal(`<h2>📘 나의 디지털 북</h2><p class="mut">독후 활동·서평·해시태그·AI 표지가 한 권으로 모여요.</p>${done.length?done.map(([id,st])=>bookHtml(id,st,S.avatar.displayName)).join(''):'<p>아직 완료한 책이 없어요. 교실의 학급 문고에서 활동을 시작해 보세요.</p>'}`,{cls:'wide'});
+  const done=Object.entries(S.books).filter(([,b])=>b.status==='reviewed'||b.song);
+  const m=openModal(`<h2>📘 나의 디지털 북</h2><p class="mut">독후 활동·서평·이모지·AI 표지·책 음악이 한 권으로 모여요.</p>${done.length?done.map(([id,st])=>bookHtml(id,st,S.avatar.displayName)).join(''):'<p>아직 완료한 책이 없어요. 교실의 학급 문고에서 활동을 시작해 보세요.</p>'}`,{cls:'wide'});
 }
 function openAnthology(){
   const mine=Object.entries(S.books).filter(([,b])=>b.status==='reviewed').map(([id,st])=>({id,st,who:S.avatar.displayName||'나',mine:true}));
-  const others=FAKE_REVIEWS.map(f=>({id:f.book,st:{review:{text:f.text,stars:f.stars,tags:f.tags},date:'2026.11.0'+(2+f.stars%3)},who:f.name}));
+  const others=FAKE_REVIEWS.map(f=>({id:f.book,st:{review:{text:f.text,stars:f.stars,tags:f.tags,emoji:f.emoji},song:f.song,date:'2026.11.0'+(2+f.stars%3)},who:f.name}));
   const all=[...mine,...others];const tags=[...new Set(all.flatMap(a=>a.st.review.tags))];let flt=null;
   const m=openModal(`<h2>📖 디지털 학급 문집</h2><p class="mut">우리 반 친구들의 서평과 작품이 한곳에 모여요. 해시태그로 골라 볼 수 있어요.</p><div id="tf"></div><div id="al"></div>`,{cls:'wide'});
   const draw=()=>{m.querySelector('#tf').innerHTML=`<button class="tag btnlike ${!flt?'on':''}" data-t="">전체</button>`+tags.map(t=>`<button class="tag btnlike ${flt===t?'on':''}" data-t="${t}">${t}</button>`).join('');
@@ -903,7 +1010,7 @@ function openLocker(){
   const m=openModal(`<h2>🔐 나의 사물함</h2><p class="mut">획득한 배지와 구매한 꾸미기 아이템을 붙이거나 뗄 수 있어요. (테마는 하나만)</p><h3>🏅 배지</h3><div id="bg"></div><h3>🎒 내 아이템</h3><div id="it"></div>`,{cls:'wide',onClose:()=>{if(cur&&cur.name==='classroom')goScene('classroom',[W_LOCK(),0])}});
   const badges=Object.entries(S.books).filter(([,b])=>b.status==='reviewed').map(([id])=>BOOKS[id]);
   m.querySelector('#bg').innerHTML=badges.length?badges.map(b=>`<span class="tag on" style="font-size:1.1rem">${b.badge} ${b.title}</span>`).join(''):'<span class="mut">책을 완료하면 배지가 생겨요.</span>';
-  const draw=()=>{const own=S.owned.map(id=>SHOP.find(s=>s.id===id));
+  const draw=()=>{const own=S.owned.map(id=>SHOP.find(s=>s.id===id)).filter(s=>s&&s.kind!=='wear');
     m.querySelector('#it').innerHTML=own.length?own.map(s=>`<button class="opt ${S.equipped.includes(s.id)?'on':''}" data-id="${s.id}" style="margin:3px;font-size:1rem">${s.emoji} ${s.name}</button>`).join(''):'<span class="mut">상점에서 아이템을 사 보세요!</span>';
     m.querySelectorAll('#it button').forEach(b=>b.onclick=()=>{const s=SHOP.find(x=>x.id===b.dataset.id);const on=S.equipped.includes(s.id);
       if(on)S.equipped=S.equipped.filter(x=>x!==s.id);else{if(s.kind==='theme')S.equipped=S.equipped.filter(x=>SHOP.find(y=>y.id===x).kind!=='theme');S.equipped.push(s.id)}save();draw()})};
@@ -911,11 +1018,22 @@ function openLocker(){
 }
 const W_LOCK=()=>8;
 function openShop(){
-  const m=openModal(`<h2>🛍️ 구름 상점</h2><p>보유 포인트: <b id="pt">${S.points}</b>P <span class="mut">(서평·표지·협동 보너스로 모아요)</span></p><div class="cards" id="sh"></div>`,{cls:'wide'});
-  const draw=()=>{m.querySelector('#pt').textContent=S.points;const box=m.querySelector('#sh');box.innerHTML='';
-    SHOP.forEach(s=>{const own=S.owned.includes(s.id);const c=document.createElement('div');c.className='card center';
-      c.innerHTML=`<div style="font-size:2.4rem">${s.emoji}</div><h3>${s.name}</h3><div class="mut">${{sticker:'스티커',figure:'피규어',theme:'사물함 테마'}[s.kind]}</div><button class="btn ${own?'alt':'sun'}" ${own||S.points<s.price?'disabled':''}>${own?'보유 중':s.price+'P 구매'}</button>`;
-      c.querySelector('button').onclick=()=>{if(S.points<s.price||own)return;S.points-=s.price;S.owned.push(s.id);S.equipped.push(s.id);if(s.kind==='theme')S.equipped=S.equipped.filter(x=>x===s.id||SHOP.find(y=>y.id===x).kind!=='theme');save();toast(`${s.emoji} ${s.name} 구매! 사물함에 자동으로 붙였어요`);draw()};
+  let tab='wear';
+  const m=openModal(`<h2>☕ 구름 상점 트럭</h2><p>보유 포인트: <b id="pt">${S.points}</b>P <span class="mut">(서평·표지·음악·협동 보너스로 모아요)</span></p><div class="tabs" id="stb"></div><div class="cards" id="sh"></div>`,{cls:'wide'});
+  const KIND={wear:'캐릭터 꾸미기',sticker:'스티커',figure:'피규어',theme:'사물함 테마'},SLOT={hat:'머리',back:'등',hand:'손'};
+  const draw=()=>{m.querySelector('#pt').textContent=S.points;
+    m.querySelector('#stb').innerHTML=[['wear','👕 캐릭터 꾸미기'],['locker','🗄️ 사물함 꾸미기']].map(([k,n])=>`<button class="opt ${tab===k?'on':''}" data-t="${k}">${n}</button>`).join('');
+    m.querySelectorAll('#stb button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;draw()});
+    const box=m.querySelector('#sh');box.innerHTML='';
+    SHOP.filter(s=>(s.kind==='wear')===(tab==='wear')).forEach(s=>{const own=S.owned.includes(s.id);const worn=s.kind==='wear'&&S.avatar[s.slot]===s.id;
+      const c=document.createElement('div');c.className='card center';
+      const label=s.kind==='wear'?(own?(worn?'벗기':'착용하기'):s.price+'P 구매'):(own?'보유 중':s.price+'P 구매');
+      c.innerHTML=`<div style="font-size:2.4rem">${s.emoji}</div><h3>${s.name}</h3><div class="mut">${s.kind==='wear'?'캐릭터 · '+SLOT[s.slot]:KIND[s.kind]}</div><button class="btn ${own?'alt':'sun'}" ${(!own&&S.points<s.price)||(own&&s.kind!=='wear')?'disabled':''}>${label}</button>`;
+      c.querySelector('button').onclick=()=>{
+        if(s.kind==='wear'){
+          if(own){S.avatar[s.slot]=worn?'none':s.id;save();rebuildPlayer();toast(worn?`${s.emoji} 벗었어요`:`${s.emoji} ${s.name} 착용!`);draw();return}
+          if(S.points<s.price)return;S.points-=s.price;S.owned.push(s.id);S.avatar[s.slot]=s.id;save();rebuildPlayer();toast(`${s.emoji} ${s.name} 구매! 바로 착용했어요 ✨`);draw();return}
+        if(S.points<s.price||own)return;S.points-=s.price;S.owned.push(s.id);S.equipped.push(s.id);if(s.kind==='theme')S.equipped=S.equipped.filter(x=>x===s.id||SHOP.find(y=>y.id===x).kind!=='theme');save();toast(`${s.emoji} ${s.name} 구매! 사물함에 자동으로 붙였어요`);draw()};
       box.appendChild(c)})};
   draw();
 }
@@ -1027,13 +1145,86 @@ function openCoverStudio(){
    ============================================================ */
 let actx=null;const FREQ=[261.63,293.66,329.63,349.23,392,440,493.88,523.25],PK=['a','s','d','f','g','h','j','k'];
 function tone(f){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();const o=actx.createOscillator(),g=actx.createGain();o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(0.0001,actx.currentTime);g.gain.exponentialRampToValueAtTime(0.4,actx.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,actx.currentTime+1.1);o.connect(g).connect(actx.destination);o.start();o.stop(actx.currentTime+1.2)}catch(e){}}
-let pianoUI=false;
+let pianoUI=false,onPianoNote=null;
+const ac=()=>actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+function drum(kind,at){try{const c=ac(),t=at||c.currentTime;
+  if(kind===0){const o=c.createOscillator(),g=c.createGain();o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(40,t+0.25);g.gain.setValueAtTime(0.9,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.3);o.connect(g).connect(c.destination);o.start(t);o.stop(t+0.32)}
+  else{const n=c.sampleRate*0.2,buf=c.createBuffer(1,n,c.sampleRate),d=buf.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n);
+    const src=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();src.buffer=buf;f.type='highpass';f.frequency.value=1200;g.gain.setValueAtTime(0.5,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.18);src.connect(f).connect(g).connect(c.destination);src.start(t)}}catch(e){}}
+
+/* ===== 책 음악 만들기 (크롬 뮤직랩 송메이커처럼)
+   - 멜로디(피아노 8음) + 리듬(드럼 2종), 1마디 = 4칸, 최대 8마디
+   - 칸을 눌러 음을 찍거나, "건반으로 녹음"을 켜고 건반을 치면 차례대로 기록
+   - 저장하면 그 책의 디지털 북(서고)과 학급 문집에 음악이 담겨요 ===== */
+const NOTE_NAMES=['도','레','미','파','솔','라','시','도'];
+const NOTE_COLORS=['#e2574c','#f2a33c','#f2d85c','#7ac17a','#2a9d8f','#4aa3d8','#8a6fd1','#d15a9a'];
+const DRUMS=['🥁 쿵','👏 짝'];
+const STEPS_PER_BAR=4,MAX_BARS=8;
+let songTimer=null;
+function stopSong(){if(songTimer){clearInterval(songTimer);songTimer=null}}
+// song = {bars, tempo, n:["칸,음"...], d:["칸,드럼"...]}
+function playSong(song,onStep){stopSong();ac();const N=song.bars*STEPS_PER_BAR,ms=60000/song.tempo;const nset=new Set(song.n),dset=new Set(song.d);let i=0;
+  const step=()=>{if(i>=N){stopSong();onStep&&onStep(-1);return}
+    for(let r=0;r<8;r++)if(nset.has(i+','+r))tone(FREQ[r]);for(let r=0;r<2;r++)if(dset.has(i+','+r))drum(r);onStep&&onStep(i);i++};
+  step();songTimer=setInterval(step,ms)}
+function miniSong(song){const N=song.bars*STEPS_PER_BAR,nset=new Set(song.n);let h=`<div class="mini" style="grid-template-columns:repeat(${N},6px)">`;
+  for(let r=7;r>=0;r--)for(let c=0;c<N;c++)h+=`<i style="${nset.has(c+','+r)?'background:'+NOTE_COLORS[r]:''}"></i>`;return h+'</div>'}
+function songBlock(song,key){return `<p style="margin:8px 0 4px"><b>🎵 나의 책 음악</b> <span class="mut">${song.bars}마디 · 빠르기 ${song.tempo}</span></p><div class="row">${miniSong(song)}<button class="btn sun" data-play="${key}">▶ 듣기</button></div>`}
+const SONGS={}; // data-play 키 → 노래 (서고·문집 화면에서 재생용)
+document.addEventListener('click',e=>{const b=e.target.closest('[data-play]');if(!b)return;const sg=SONGS[b.dataset.play];if(!sg)return;
+  if(b.dataset.on){stopSong();b.textContent='▶ 듣기';delete b.dataset.on;return}
+  document.querySelectorAll('[data-play][data-on]').forEach(x=>{x.textContent='▶ 듣기';delete x.dataset.on});
+  b.dataset.on='1';b.textContent='■ 멈춤';playSong(sg,i=>{if(i<0){b.textContent='▶ 듣기';delete b.dataset.on}})});
+
 function openPiano(){
-  const m=openModal(`<h2>🎹 음악실 피아노</h2><p class="mut">건반을 누르거나 키보드 A S D F G H J K (또는 1~8)를 눌러 연주해요.</p><div class="center" id="pk"></div><p class="mut center">책 속 장면의 분위기를 소리로 표현해 보세요 🎶</p>`,{onClose:()=>{pianoUI=false}});pianoUI=true;
-  m.querySelector('#pk').innerHTML=FREQ.map((f,i)=>`<div class="key" data-i="${i}"><span>${['도','레','미','파','솔','라','시','도'][i]}<br>${PK[i].toUpperCase()}</span></div>`).join('');
-  m.querySelectorAll('.key').forEach(k=>k.addEventListener('pointerdown',()=>{k.classList.add('down');tone(FREQ[+k.dataset.i]);setTimeout(()=>k.classList.remove('down'),160)}));
+  const mine=Object.keys(S.books);
+  let sel=mine.find(id=>S.books[id].song)||mine[0]||null;
+  const blank=()=>({bars:4,tempo:110,n:[],d:[]});
+  let song=sel&&S.books[sel].song?JSON.parse(JSON.stringify(S.books[sel].song)):blank();
+  let rec=false,cursor=0;
+  const m=openModal(`<h2>🎼 책 음악 만들기</h2><p class="mut">읽은 책의 장면과 마음을 음악으로 표현해요. 칸을 눌러 음을 찍고, ▶ 재생으로 들어 보세요. (최대 8마디)</p>
+    <div class="row" id="bk"></div>
+    <div class="row" style="margin:8px 0"><span>마디</span><button class="opt" id="bm">−</button><b id="bars"></b><button class="opt" id="bp">+</button>
+      <span style="margin-left:10px">빠르기</span><input type="range" id="tp" min="70" max="170" step="5" style="width:120px"><b id="tpv"></b></div>
+    <div class="song-wrap"><div class="song" id="grid"></div></div>
+    <div class="row" style="margin-top:10px"><button class="btn" id="play">▶ 재생</button><button class="btn alt" id="rec">⏺ 건반으로 녹음</button><button class="btn alt" id="clr">🗑 지우기</button><button class="btn pink" id="save">💾 내 서고에 저장</button></div>
+    <p class="mut" id="hint"></p>
+    <div class="center" id="pk"></div>`,{cls:'wide',onClose:()=>{pianoUI=false;onPianoNote=null;stopSong()}});
+  pianoUI=true;
+  const N=()=>song.bars*STEPS_PER_BAR;
+  const drawBooks=()=>{const bk=m.querySelector('#bk');
+    bk.innerHTML=mine.length?'<span>어떤 책의 음악?</span>'+mine.map(id=>`<button class="opt ${id===sel?'on':''}" data-b="${id}">${BOOKS[id].badge} ${BOOKS[id].title}${S.books[id].song?' 🎵':''}</button>`).join(''):'<span class="mut">학급 문고에 책이 없어요. 자유롭게 연주해 보고, 도서관에서 책을 담으면 저장할 수 있어요.</span>';
+    bk.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>{stopSong();sel=b.dataset.b;song=S.books[sel].song?JSON.parse(JSON.stringify(S.books[sel].song)):blank();cursor=0;drawAll()})};
+  const drawGrid=()=>{const g=m.querySelector('#grid');const n=N();g.style.gridTemplateColumns=`38px repeat(${n},20px)`;
+    const nset=new Set(song.n),dset=new Set(song.d);let h='';
+    for(let r=7;r>=0;r--){h+=`<div class="rowlab">${NOTE_NAMES[r]}${r===7?'↑':''}</div>`;for(let c=0;c<n;c++)h+=`<button class="cell ${c%STEPS_PER_BAR===0&&c?'bar':''} ${nset.has(c+','+r)?'on':''} ${rec&&c===cursor?'cur':''}" style="--c:${NOTE_COLORS[r]}" data-c="${c}" data-r="${r}" aria-label="${c+1}번째 칸 ${NOTE_NAMES[r]}"></button>`}
+    for(let r=0;r<2;r++){h+=`<div class="rowlab">${DRUMS[r]}</div>`;for(let c=0;c<n;c++)h+=`<button class="cell drum ${c%STEPS_PER_BAR===0&&c?'bar':''} ${dset.has(c+','+r)?'on':''}" data-c="${c}" data-d="${r}" aria-label="${c+1}번째 칸 ${DRUMS[r]}"></button>`}
+    g.innerHTML=h;
+    g.querySelectorAll('.cell').forEach(el=>el.onclick=()=>{const c=+el.dataset.c;
+      if(el.dataset.d!==undefined){const k=c+','+el.dataset.d,i=song.d.indexOf(k);if(i<0){song.d.push(k);drum(+el.dataset.d)}else song.d.splice(i,1)}
+      else{const k=c+','+el.dataset.r,i=song.n.indexOf(k);if(i<0){song.n.push(k);tone(FREQ[+el.dataset.r])}else song.n.splice(i,1)}
+      drawGrid()})};
+  const drawAll=()=>{drawBooks();m.querySelector('#bars').textContent=song.bars;m.querySelector('#tp').value=song.tempo;m.querySelector('#tpv').textContent=song.tempo;drawGrid();
+    m.querySelector('#hint').textContent=rec?`⏺ 녹음 중: 건반(또는 A~K, 1~8 키)을 치면 빨간 칸(${cursor+1}번째)부터 차례로 기록돼요.`:'💡 1마디는 4칸이에요. 아래 건반으로 미리 소리를 들어 볼 수 있어요.'};
+  m.querySelector('#bm').onclick=()=>{if(song.bars>1){song.bars--;const n=N();song.n=song.n.filter(k=>+k.split(',')[0]<n);song.d=song.d.filter(k=>+k.split(',')[0]<n);cursor=Math.min(cursor,n-1);drawAll()}};
+  m.querySelector('#bp').onclick=()=>{if(song.bars<MAX_BARS){song.bars++;drawAll()}else toast('최대 8마디까지 만들 수 있어요')};
+  m.querySelector('#tp').oninput=e=>{song.tempo=+e.target.value;m.querySelector('#tpv').textContent=song.tempo};
+  m.querySelector('#play').onclick=function(){if(songTimer){stopSong();this.textContent='▶ 재생';drawGrid();return}this.textContent='■ 정지';
+    playSong(song,i=>{m.querySelectorAll('.cell.now').forEach(x=>x.classList.remove('now'));if(i<0){this.textContent='▶ 재생';return}m.querySelectorAll(`.cell[data-c="${i}"]`).forEach(x=>x.classList.add('now'))})};
+  m.querySelector('#rec').onclick=function(){rec=!rec;this.textContent=rec?'⏹ 녹음 끄기':'⏺ 건반으로 녹음';this.classList.toggle('pink',rec);drawAll()};
+  m.querySelector('#clr').onclick=()=>{if(confirm('모든 음을 지울까요?')){song.n=[];song.d=[];cursor=0;drawAll()}};
+  m.querySelector('#save').onclick=()=>{
+    if(!sel){toast('도서관에서 책을 먼저 학급 문고에 담아 주세요 📚');return}
+    if(!song.n.length&&!song.d.length){toast('음을 하나 이상 찍어 주세요 🎵');return}
+    const st=S.books[sel],first=!st.song;st.song={bars:song.bars,tempo:song.tempo,n:[...song.n],d:[...song.d]};if(first)S.points+=15;save();
+    toast(first?`『${BOOKS[sel].title}』 서고에 음악이 담겼어요! +15P 🎵`:`『${BOOKS[sel].title}』 음악을 고쳐 저장했어요 🎵`);drawBooks()};
+  // 미리 듣기 건반 (녹음 모드면 칸에 기록)
+  onPianoNote=i=>{if(!rec)return;const k=cursor+','+i;if(!song.n.includes(k))song.n.push(k);cursor=(cursor+1)%N();drawAll()};
+  m.querySelector('#pk').innerHTML=FREQ.map((f,i)=>`<div class="key sm" data-i="${i}" style="border-top:6px solid ${NOTE_COLORS[i]}"><span>${NOTE_NAMES[i]}<br>${PK[i].toUpperCase()}</span></div>`).join('');
+  m.querySelectorAll('.key').forEach(k=>k.addEventListener('pointerdown',()=>{k.classList.add('down');const i=+k.dataset.i;tone(FREQ[i]);onPianoNote&&onPianoNote(i);setTimeout(()=>k.classList.remove('down'),160)}));
+  drawAll();
 }
-function pianoKey(k,down){if(!pianoUI||!down)return;let i=PK.indexOf(k);if(i<0&&/^[1-8]$/.test(k))i=+k-1;if(i<0)return;tone(FREQ[i]);const el=document.querySelectorAll('.key')[i];if(el){el.classList.add('down');setTimeout(()=>el.classList.remove('down'),160)}}
+function pianoKey(k,down){if(!pianoUI||!down)return;let i=PK.indexOf(k);if(i<0&&/^[1-8]$/.test(k))i=+k-1;if(i<0)return;tone(FREQ[i]);onPianoNote&&onPianoNote(i);const el=document.querySelectorAll('.key')[i];if(el){el.classList.add('down');setTimeout(()=>el.classList.remove('down'),160)}}
 
 /* ============================================================
    타이틀 · 캐릭터 만들기
@@ -1055,7 +1246,7 @@ async function showCreator(){
    <input type="text" id="nm" maxlength="8" placeholder="이름 (최대 8자)" value="${A.displayName}">
    <h3>피부색</h3>${sw('skin',SKINS)}<h3>머리 색</h3>${sw('hair',HAIRS)}<h3>머리 모양</h3>${op('hairStyle',HAIR_STYLES)}
    <h3>옷 색</h3>${sw('top',CLOTHES)}<h3>옷 종류</h3>${op('topStyle',TOP_STYLES)}<h3>바지/치마 색</h3>${sw('bottom',CLOTHES)}${op('bottomStyle',BOTTOM_STYLES)}
-   <h3>표정</h3>${op('face',FACES)}<h3>눈</h3>${op('eyes',EYES)}<h3>액세서리</h3>${op('accessory',ACCS)}
+   <h3>표정</h3>${op('face',FACES)}<h3>눈</h3>${op('eyes',EYES)}<h3>액세서리</h3>${op('accessory',ACCS)}${wearHtml(A)}
    <div class="row" style="margin-top:16px"><button class="btn alt" id="rnd">🎲 랜덤</button><button class="btn" id="ok">이 모습으로 시작!</button></div></div>`;
   const rebind=()=>{screen.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{A[b.dataset.k]=b.dataset.v;rebuildPlayer();showCreatorKeep()})};
   function showCreatorKeep(){const sc=screen.querySelector('.creator').scrollTop;const nmv=$('#nm').value;A.displayName=nmv;showCreatorHtmlOnly(sc)}
@@ -1066,7 +1257,7 @@ async function showCreator(){
    <input type="text" id="nm" maxlength="8" placeholder="이름 (최대 8자)" value="${nm}">
    <h3>피부색</h3>${sw('skin',SKINS)}<h3>머리 색</h3>${sw('hair',HAIRS)}<h3>머리 모양</h3>${op('hairStyle',HAIR_STYLES)}
    <h3>옷 색</h3>${sw('top',CLOTHES)}<h3>옷 종류</h3>${op('topStyle',TOP_STYLES)}<h3>바지/치마 색</h3>${sw('bottom',CLOTHES)}${op('bottomStyle',BOTTOM_STYLES)}
-   <h3>표정</h3>${op('face',FACES)}<h3>눈</h3>${op('eyes',EYES)}<h3>액세서리</h3>${op('accessory',ACCS)}
+   <h3>표정</h3>${op('face',FACES)}<h3>눈</h3>${op('eyes',EYES)}<h3>액세서리</h3>${op('accessory',ACCS)}${wearHtml(A)}
    <div class="row" style="margin-top:16px"><button class="btn alt" id="rnd">🎲 랜덤</button><button class="btn" id="ok">이 모습으로 시작!</button></div></div>`;
     rebind();wire();
   }
@@ -1084,6 +1275,11 @@ async function startGame(){
 }
 $('#b-books').onclick=()=>{if(uiLock===0)openMyBooks()};
 $('#b-league').onclick=()=>{if(uiLock===0)openLeague()};
+$('#b-bubble').onclick=()=>{if(uiLock>0)return;
+  const done=Object.entries(S.books).filter(([,b])=>b.review?.emoji);
+  const m=openModal(`<h2>💬 머리 위 말풍선</h2><p class="mut">내가 읽은 책을 표현한 이모지가 캐릭터 머리 위에 떠요. 친구들도 볼 수 있어요!</p><div id="bb"></div>`);
+  m.querySelector('#bb').innerHTML=(done.length?done.map(([id,b])=>`<button class="opt ${S.bubbleOn!==false&&S.bubble===id?'on':''}" data-b="${id}" style="margin:4px;font-size:1.05rem">${b.review.emoji.join('')} 『${BOOKS[id].title}』</button>`).join(''):'<p>아직 이모지로 표현한 책이 없어요. 학급 문고에서 활동을 마치고 서평을 쓰면 생겨요!</p>')+(done.length?`<button class="opt ${S.bubbleOn===false?'on':''}" data-b="" style="margin:4px">🙈 말풍선 끄기</button>`:'');
+  m.querySelectorAll('[data-b]').forEach(x=>x.onclick=()=>{if(x.dataset.b){S.bubble=x.dataset.b;S.bubbleOn=true}else S.bubbleOn=false;save();rebuildPlayer();closeModal()})};
 $('#b-avatar').onclick=()=>{if(uiLock>0||!cur||cur.creator)return;const keep=cur.name,pos=player.group.position.clone();
   S.avatar.displayName=S.avatar.displayName;goScene('creator').then(()=>{$('#hud').style.display='none';$('#topbtns').style.display='none';$('#helpbar').style.display='none';buildCreatorReturn(keep,pos)})};
 function buildCreatorReturn(keep,pos){
@@ -1104,7 +1300,7 @@ async function showCreatorUI(){ // 현재 씬이 creator 인 상태에서 패널
    <input type="text" id="nm" maxlength="8" placeholder="이름 (최대 8자)" value="${A.displayName}">
    <h3>피부색</h3>${sw('skin',SKINS)}<h3>머리 색</h3>${sw('hair',HAIRS)}<h3>머리 모양</h3>${op('hairStyle',HAIR_STYLES)}
    <h3>옷 색</h3>${sw('top',CLOTHES)}<h3>옷 종류</h3>${op('topStyle',TOP_STYLES)}<h3>바지/치마 색</h3>${sw('bottom',CLOTHES)}${op('bottomStyle',BOTTOM_STYLES)}
-   <h3>표정</h3>${op('face',FACES)}<h3>눈</h3>${op('eyes',EYES)}<h3>액세서리</h3>${op('accessory',ACCS)}
+   <h3>표정</h3>${op('face',FACES)}<h3>눈</h3>${op('eyes',EYES)}<h3>액세서리</h3>${op('accessory',ACCS)}${wearHtml(A)}
    <div class="row" style="margin-top:16px"><button class="btn alt" id="rnd">🎲 랜덤</button><button class="btn" id="ok">저장</button></div></div>`;
     screen.querySelector('.creator').scrollTop=scroll;
     screen.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{const sc=screen.querySelector('.creator').scrollTop;A.displayName=$('#nm').value;A[b.dataset.k]=b.dataset.v;rebuildPlayer();render(sc)});
@@ -1112,6 +1308,14 @@ async function showCreatorUI(){ // 현재 씬이 creator 인 상태에서 패널
     $('#rnd').onclick=()=>{Object.assign(A,randomAvatar($('#nm').value));rebuildPlayer();render(0)};
   };
   render();
+}
+
+// 꾸미기 화면의 "상점에서 산 아이템" 칸
+function wearHtml(A){
+  const own=SHOP.filter(s=>s.kind==='wear'&&S&&S.owned.includes(s.id));
+  const slots=[['hat','머리'],['back','등'],['hand','손']];
+  return `<h3>☕ 상점에서 산 아이템</h3>`+(own.length?slots.map(([k,n])=>{const it=own.filter(s=>s.slot===k);if(!it.length)return'';
+    return `<div class="mut">${n}</div><div class="row"><button class="opt ${(A[k]||'none')==='none'?'on':''}" data-k="${k}" data-v="none">없음</button>${it.map(s=>`<button class="opt ${A[k]===s.id?'on':''}" data-k="${k}" data-v="${s.id}">${s.emoji} ${s.name}</button>`).join('')}</div>`}).join(''):'<div class="mut">캠퍼스의 ☕ 구름 상점 트럭에서 왕관·망토·날개를 살 수 있어요!</div>');
 }
 
 /* ===== 시작 ===== */
